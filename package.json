@@ -1,0 +1,12 @@
+{
+  "name": "flux-monitor",
+  "private": true,
+  "version": "1.0.0",
+  "description": "FluxMonitor - EDI Traffic Monitoring Suite",
+  "scripts": {
+    "dev:front": "pnpm --filter flux-monitor-frontend dev",
+    "build:front": "pnpm --filter flux-monitor-frontend build",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down"
+  }
+}
