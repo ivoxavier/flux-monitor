@@ -1,0 +1,89 @@
+name: Bug Report
+description: Report an error or unexpected behavior in FluxMonitor.
+title: "[BUG]: "
+labels: ["bug", "triage"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to report this issue! Please fill out the form with as much detail as possible.
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected Component
+      description: Where does the issue occur?
+      options:
+        - "Front-end (Web Interface)"
+        - "Back-end (API)"
+        - "Docker / Runtime Environment"
+        - "Not Sure / Both"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what is going wrong.
+      placeholder: "Example: When loading the dashboard, the EDI file list remains in an infinite loading state."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Tell us exactly how to reproduce the issue.
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. Observe the error '...'
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should have happened instead?
+      placeholder: "Example: The transmission list should load in less than 2 seconds."
+    validations:
+      required: true
+
+  - type: textarea
+    id: edi-context
+    attributes:
+      label: EDI Context (If Applicable)
+      description: Does the issue occur with a specific format or file type (e.g., EDIFACT, X12, IDOC)? If so, provide an example (remove sensitive data first!).
+      placeholder: "Example: Happens while processing EDIFACT ORDERS messages..."
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment and Versions
+      description: Provide information about your environment.
+      placeholder: |
+        - OS: [e.g., Ubuntu 24.04, Windows 11, macOS]
+        - Browser (if applicable): [e.g., Chrome 124, Firefox]
+        - Runtime: [e.g., Docker Compose, Local Bare-Metal (dotnet run / pnpm dev)]
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: validation-checklist
+    attributes:
+      label: Pre-Submission Checklist
+      options:
+        - label: I have ensured that I am not sharing any sensitive or confidential customer data (PII, real EDI invoice data, etc.).
+          required: true
+        - label: I checked the .NET API logs or browser console for additional error details.
+          required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or Logs
+      description: Drag and drop images or paste the error stack trace (.NET/Console) here to help with troubleshooting.
+```
