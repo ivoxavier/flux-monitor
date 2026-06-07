@@ -1,0 +1,30 @@
+name: FluxMonitor - Backend CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'back-end/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'back-end/**'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET 10
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.x'
+
+    - name: Restore dependencies
+      run: dotnet restore back-end/src/*.sln
+
+    - name: Build solution
+      run: dotnet build back-end/src/*.sln --configuration Release --no-restore

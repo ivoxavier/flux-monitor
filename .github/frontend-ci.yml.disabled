@@ -1,0 +1,45 @@
+name: FluxMonitor - Frontend CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'front-end/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'front-end/**'
+
+jobs:
+  build-frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v3
+      with:
+        version: 9
+
+    - name: Configure pnpm cache
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'pnpm'
+        cache-dependency-path: 'front-end/pnpm-lock.yaml'
+
+    - name: Install dependencies
+      run: pnpm --filter ./front-end install
+
+    # - name: Run Linter / Lint Check
+    #   run: pnpm --filter ./front-end lint
+
+    - name: Run Build (Vite)
+      run: pnpm --filter ./front-end build
