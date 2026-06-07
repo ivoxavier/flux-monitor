@@ -86,4 +86,3 @@ body:
     attributes:
       label: Screenshots or Logs
       description: Drag and drop images or paste the error stack trace (.NET/Console) here to help with troubleshooting.
-```
