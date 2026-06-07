@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  # OPTION A (DEFAULT): MySQL
+  flux-monitor-db:
+    image: mysql:8.0
+    container_name: flux-monitor-db-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password_secure
+      MYSQL_DATABASE: fluxmonitor_db
+      MYSQL_USER: flux_admin
+      MYSQL_PASSWORD: flux_password_123
+    ports:
+      - "3306:3306"
+    volumes:
+      - flux_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # OPTION B: PostgreSQL (Uncomment this block and the API healthcheck condition if you want to use it)
+  # flux-monitor-db:
+  #   image: postgres:16-alpine
+  #   container_name: flux-monitor-db-postgres
+  #   restart: always
+  #   environment:
+  #     POSTGRES_USER: flux_admin
+  #     POSTGRES_PASSWORD: flux_password_123
+  #     POSTGRES_DB: fluxmonitor_db
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - flux_postgres_data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U flux_admin -d fluxmonitor_db"]
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 5
+
+  # OPTION C: SQL Server (Uncomment this block if you want to use it)
+  # flux-monitor-db:
+  #   image: mcr.microsoft.com/mssql/server:2022-latest
+  #   container_name: flux-monitor-db-sqlserver
+  #   restart: always
+  #   environment:
+  #     - ACCEPT_EULA=Y
+  #     - MSSQL_SA_PASSWORD=YourStrong@Password123
+  #     - MSSQL_PID=Developer
+  #   ports:
+  #     - "1433:1433"
+
+  # Back-end: .NET Web API
+  flux-monitor-api:
+    image: fluxmonitor-api:latest
+    container_name: flux-monitor-api
+    restart: always
+    build:
+      context: ./back-end
+      dockerfile: Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      
+      # Environment variable for your API to detect the active provider (Suggested values: MySql, PostgreSql, SqlServer)
+      - DatabaseProvider=MySql
+      
+      # CONNECTION STRINGS CONFIGURATION:
+      # Active (MySQL):
+      - ConnectionStrings__DefaultConnection=Server=flux-monitor-db;Database=fluxmonitor_db;Uid=flux_admin;Pwd=flux_password_123;
+      
+      # Alternative (PostgreSQL):
+      # - ConnectionStrings__DefaultConnection=Host=flux-monitor-db;Database=fluxmonitor_db;Username=flux_admin;Password=flux_password_123;
+      
+      # Alternative (SQL Server):
+      # - ConnectionStrings__DefaultConnection=Server=flux-monitor-db;Database=master;User Id=sa;Password=YourStrong@Password123;TrustServerCertificate=True;
+    ports:
+      - "5001:8080"
+    depends_on:
+      flux-monitor-db:
+        condition: service_healthy
+
+  # Front-end: Web Application
+  flux-monitor-frontend:
+    image: fluxmonitor-frontend:latest
+    container_name: flux-monitor-frontend
+    restart: always
+    build:
+      context: ./front-end
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - flux-monitor-api
+
+volumes:
+  flux_mysql_data:
+  # flux_postgres_data: # Uncomment if using PostgreSQL
