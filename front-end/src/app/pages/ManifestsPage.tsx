@@ -1,13 +1,23 @@
 import { useState } from 'react';
-import { Card, Table, Button, Space, Upload, Tag, Modal, Form, Input, Select, InputNumber, Popconfirm, message } from 'antd';
-import { UploadOutlined, PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, FileTextOutlined, FileExcelOutlined, FilePdfOutlined } from '@ant-design/icons';
+import { Card, Table, Button, Space, Upload, Tag, Modal, Form, Input, Select, InputNumber, Popconfirm, message, theme, Row, Col } from 'antd';
+import { UploadOutlined, PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, FileTextOutlined, FileExcelOutlined, FilePdfOutlined, SearchOutlined, CloseOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
 
 export default function ManifestsPage() {
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [viewModalVisible, setViewModalVisible] = useState(false);
+  const [showDetailPanel, setShowDetailPanel] = useState(false);
   const [selectedManifest, setSelectedManifest] = useState<any>(null);
+  const [searchText, setSearchText] = useState('');
   const [form] = Form.useForm();
+
+
+  const { token } = theme.useToken();
+
+  const cardElevationStyle = {
+    boxShadow: token.boxShadowSecondary,
+    borderRadius: token.borderRadiusLG,
+    border: 'none',
+  };
 
   const manifestos = [
     {
@@ -19,6 +29,11 @@ export default function ManifestsPage() {
       ultimaAtualizacao: '2026-06-05 10:30:00',
       estado: 'ativo',
       tipo: 'XML',
+      classeFicheiro: 'Faturas',
+      dirIn: '/opt/edi/sap/inbound',
+      dirOut: '/opt/edi/sap/archive',
+      tipoSistema: 'Talend',
+      schedulerMachine: 'srv-talend-prod-01',
     },
     {
       key: '2',
@@ -29,6 +44,11 @@ export default function ManifestsPage() {
       ultimaAtualizacao: '2026-06-04 14:20:00',
       estado: 'ativo',
       tipo: 'JSON',
+      classeFicheiro: 'Encomendas',
+      dirIn: 'C:\\EDI\\WMS\\Outbound',
+      dirOut: 'C:\\EDI\\WMS\\Success',
+      tipoSistema: 'C#',
+      schedulerMachine: 'srv-win-jobs-02',
     },
     {
       key: '3',
@@ -39,6 +59,11 @@ export default function ManifestsPage() {
       ultimaAtualizacao: '2026-06-03 09:15:00',
       estado: 'inativo',
       tipo: 'CSV',
+      classeFicheiro: 'Stocks',
+      dirIn: '/mnt/shares/stock/csv',
+      dirOut: '/mnt/shares/stock/processed',
+      tipoSistema: 'Altova',
+      schedulerMachine: 'srv-altova-map-01',
     },
     {
       key: '4',
@@ -49,8 +74,17 @@ export default function ManifestsPage() {
       ultimaAtualizacao: '2026-06-06 16:45:00',
       estado: 'ativo',
       tipo: 'XML',
+      classeFicheiro: 'Clientes',
+      dirIn: '/var/edi/crm/input',
+      dirOut: '/var/edi/crm/output',
+      tipoSistema: 'Talend',
+      schedulerMachine: 'srv-talend-prod-01',
     },
   ];
+
+  const filteredManifestos = manifestos.filter((item) =>
+    item.nome.toLowerCase().includes(searchText.toLowerCase())
+  );
 
   const uploadProps: UploadProps = {
     name: 'file',
@@ -75,7 +109,7 @@ export default function ManifestsPage() {
 
   const handleView = (record: any) => {
     setSelectedManifest(record);
-    setViewModalVisible(true);
+    setShowDetailPanel(true);
   };
 
   const handleEdit = (record: any) => {
@@ -115,7 +149,7 @@ export default function ManifestsPage() {
       title: 'Tipo',
       dataIndex: 'tipo',
       key: 'tipo',
-      width: 80,
+      width: 65,
       render: (tipo: string) => getFileIcon(tipo),
     },
     {
@@ -127,26 +161,13 @@ export default function ManifestsPage() {
       title: 'Fluxo Associado',
       dataIndex: 'fluxo',
       key: 'fluxo',
-    },
-    {
-      title: 'Frequência Esperada',
-      dataIndex: 'frequencia',
-      key: 'frequencia',
-    },
-    {
-      title: 'Tempo Máximo',
-      dataIndex: 'tempoMaximo',
-      key: 'tempoMaximo',
-    },
-    {
-      title: 'Última Atualização',
-      dataIndex: 'ultimaAtualizacao',
-      key: 'ultimaAtualizacao',
+      responsive: showDetailPanel ? ['md'] : undefined,
     },
     {
       title: 'Estado',
       dataIndex: 'estado',
       key: 'estado',
+      width: 90,
       render: (estado: string) => (
         <Tag color={estado === 'ativo' ? 'success' : 'default'}>
           {estado.toUpperCase()}
@@ -156,8 +177,9 @@ export default function ManifestsPage() {
     {
       title: 'Ações',
       key: 'acoes',
+      width: 130,
       render: (_: any, record: any) => (
-        <Space>
+        <Space size="middle">
           <Button
             type="text"
             icon={<EyeOutlined />}
@@ -183,32 +205,156 @@ export default function ManifestsPage() {
 
   return (
     <div>
-      <Card
-        title="Gestão de Manifestos EDI"
-        extra={
-          <Space>
-            <Upload {...uploadProps}>
-              <Button icon={<UploadOutlined />}>Upload Manifesto</Button>
-            </Upload>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => {
-                setSelectedManifest(null);
-                form.resetFields();
-                setIsModalVisible(true);
-              }}
-            >
-              Novo Manifesto
-            </Button>
-          </Space>
-        }
-      >
-        <Table columns={columns} dataSource={manifestos} pagination={{ pageSize: 10 }} />
-      </Card>
+      <Row gutter={[24, 24]}>
+        
+        {}
+        <Col span={showDetailPanel ? 14 : 24} style={{ transition: 'all 0.3s' }}>
+          <Card
+            title="Gestão de Manifestos EDI"
+            style={cardElevationStyle}
+            extra={
+              <Space>
+                <Upload {...uploadProps}>
+                  <Button icon={<UploadOutlined />}>Upload Manifesto</Button>
+                </Upload>
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={() => {
+                    setSelectedManifest(null);
+                    form.resetFields();
+                    setIsModalVisible(true);
+                  }}
+                >
+                  Novo Manifesto
+                </Button>
+              </Space>
+            }
+          >
+            <div style={{ marginBottom: 16, maxWidth: 320 }}>
+              <Input.Search
+                placeholder="Filtrar por nome do EDI..."
+                allowClear
+                enterButton={<SearchOutlined />}
+                onChange={(e) => setSearchText(e.target.value)}
+              />
+            </div>
 
+            <Table 
+              columns={columns} 
+              dataSource={filteredManifestos} 
+              pagination={{ pageSize: 10 }}
+              rowClassName={(record) => selectedManifest && record.key === selectedManifest.key && showDetailPanel ? 'ant-table-row-selected' : ''}
+            />
+          </Card>
+        </Col>
+
+        {}
+        {showDetailPanel && selectedManifest && (
+          <Col span={10} style={{ transition: 'all 0.3s' }}>
+            <Card
+              title="Detalhes do Manifesto"
+              style={cardElevationStyle}
+              extra={
+                <Button 
+                  type="text" 
+                  icon={<CloseOutlined />} 
+                  onClick={() => {
+                    setShowDetailPanel(false);
+                    setSelectedManifest(null);
+                  }} 
+                />
+              }
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div>
+                  <span style={{ color: token.colorTextDescription, display: 'block', fontSize: '12px' }}>Nome do Manifesto</span>
+                  <strong style={{ fontSize: '16px', color: token.colorTextHeading }}>{selectedManifest.nome}</strong>
+                </div>
+                
+                <Row gutter={[16, 14]}>
+                  <Col span={12}>
+                    <span style={{ color: token.colorTextDescription, display: 'block', fontSize: '12px' }}>Tipo de Ficheiro</span>
+                    <Space>{getFileIcon(selectedManifest.tipo)} <strong>{selectedManifest.tipo}</strong></Space>
+                  </Col>
+                  <Col span={12}>
+                    <span style={{ color: token.colorTextDescription, display: 'block', fontSize: '12px' }}>Estado</span>
+                    <Tag color={selectedManifest.estado === 'ativo' ? 'success' : 'default'} style={{ marginTop: 2 }}>
+                      {selectedManifest.estado.toUpperCase()}
+                    </Tag>
+                  </Col>
+                </Row>
+
+                {}
+                <div>
+                  <span style={{ color: token.colorTextDescription, display: 'block', fontSize: '12px' }}>Classe do Ficheiro</span>
+                  <Tag color="cyan" style={{ fontWeight: 500 }}>{selectedManifest.classeFicheiro || 'Não Definida'}</Tag>
+                </div>
+
+                <div>
+                  <span style={{ color: token.colorTextDescription, display: 'block', fontSize: '12px' }}>Fluxo Associado</span>
+                  <span style={{ color: token.colorText, fontWeight: 500 }}>{selectedManifest.fluxo}</span>
+                </div>
+
+                <Row gutter={[16, 14]}>
+                  <Col span={12}>
+                    <span style={{ color: token.colorTextDescription, display: 'block', fontSize: '12px' }}>Tipo de Sistema</span>
+                    <Tag color="blue">{selectedManifest.tipoSistema || 'N/A'}</Tag>
+                  </Col>
+                  <Col span={12}>
+                    <span style={{ color: token.colorTextDescription, display: 'block', fontSize: '12px' }}>Scheduler Machine</span>
+                    <span style={{ color: token.colorText, fontFamily: 'monospace', fontSize: '13px' }}>{selectedManifest.schedulerMachine || 'N/A'}</span>
+                  </Col>
+                </Row>
+
+                <Row gutter={[16, 14]}>
+                  <Col span={12}>
+                    <span style={{ color: token.colorTextDescription, display: 'block', fontSize: '12px' }}>Frequência Esperada</span>
+                    <span style={{ color: token.colorText }}>{selectedManifest.frequencia}</span>
+                  </Col>
+                  <Col span={12}>
+                    <span style={{ color: token.colorTextDescription, display: 'block', fontSize: '12px' }}>Tempo Máximo</span>
+                    <span style={{ color: token.colorText }}>{selectedManifest.tempoMaximo}</span>
+                  </Col>
+                </Row>
+
+                <div style={{ background: token.colorFillAlter, padding: '8px 12px', borderRadius: token.borderRadiusSM }}>
+                  <span style={{ color: token.colorTextDescription, display: 'block', fontSize: '11px' }}>DIR IN</span>
+                  <span style={{ color: token.colorText, fontFamily: 'monospace', fontSize: '12px', wordBreak: 'break-all' }}>
+                    {selectedManifest.dirIn || 'N/A'}
+                  </span>
+                </div>
+
+                <div style={{ background: token.colorFillAlter, padding: '8px 12px', borderRadius: token.borderRadiusSM }}>
+                  <span style={{ color: token.colorTextDescription, display: 'block', fontSize: '11px' }}>DIR OUT</span>
+                  <span style={{ color: token.colorText, fontFamily: 'monospace', fontSize: '12px', wordBreak: 'break-all' }}>
+                    {selectedManifest.dirOut || 'N/A'}
+                  </span>
+                </div>
+
+                <div style={{ borderTop: `1px solid ${token.colorBorderSecondary}`, paddingTop: '12px', marginTop: '4px' }}>
+                  <span style={{ color: token.colorTextDescription, display: 'block', fontSize: '12px' }}>Última Atualização</span>
+                  <span style={{ color: token.colorText, fontSize: '13px' }}>{selectedManifest.ultimaAtualizacao}</span>
+                </div>
+
+                <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'end' }}>
+                  <Button 
+                    type="primary" 
+                    icon={<EditOutlined />} 
+                    onClick={() => handleEdit(selectedManifest)}
+                  >
+                    Editar Dados
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </Col>
+        )}
+      </Row>
+
+      {}
       <Modal
-        title={selectedManifest ? 'Editar Manifesto' : 'Novo Manifesto'}
+        title={selectedManifest && !showDetailPanel ? 'Editar Manifesto' : 'Novo Manifesto'}
         open={isModalVisible}
         onOk={handleModalOk}
         onCancel={() => {
@@ -273,30 +419,6 @@ export default function ManifestsPage() {
             </Select>
           </Form.Item>
         </Form>
-      </Modal>
-
-      <Modal
-        title="Visualizar Manifesto"
-        open={viewModalVisible}
-        onCancel={() => setViewModalVisible(false)}
-        footer={[
-          <Button key="close" onClick={() => setViewModalVisible(false)}>
-            Fechar
-          </Button>,
-        ]}
-        width={600}
-      >
-        {selectedManifest && (
-          <div>
-            <p><strong>Nome:</strong> {selectedManifest.nome}</p>
-            <p><strong>Fluxo:</strong> {selectedManifest.fluxo}</p>
-            <p><strong>Tipo:</strong> {selectedManifest.tipo}</p>
-            <p><strong>Frequência:</strong> {selectedManifest.frequencia}</p>
-            <p><strong>Tempo Máximo:</strong> {selectedManifest.tempoMaximo}</p>
-            <p><strong>Última Atualização:</strong> {selectedManifest.ultimaAtualizacao}</p>
-            <p><strong>Estado:</strong> <Tag color={selectedManifest.estado === 'ativo' ? 'success' : 'default'}>{selectedManifest.estado.toUpperCase()}</Tag></p>
-          </div>
-        )}
       </Modal>
     </div>
   );

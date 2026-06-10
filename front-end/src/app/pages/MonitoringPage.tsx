@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, Table, Tag, Button, Space, Select, Badge, Descriptions, Modal, Timeline } from 'antd';
+import { Card, Table, Tag, Button, Space, Select, Badge, Descriptions, Modal, Timeline, theme } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, WarningOutlined, HistoryOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 
@@ -7,6 +7,16 @@ export default function MonitoringPage() {
   const navigate = useNavigate();
   const [selectedAlert, setSelectedAlert] = useState<any>(null);
   const [historyModalVisible, setHistoryModalVisible] = useState(false);
+
+  
+  const { token } = theme.useToken();
+
+
+  const cardElevationStyle = {
+    boxShadow: token.boxShadowSecondary,
+    borderRadius: token.borderRadiusLG,
+    border: 'none',
+  };
 
   const alertas = [
     {
@@ -187,26 +197,28 @@ export default function MonitoringPage() {
   return (
     <div>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        
+        {}
         <div style={{ display: 'flex', gap: 16 }}>
-          <Card style={{ flex: 1 }}>
+          <Card style={{ flex: 1, ...cardElevationStyle }}>
             <Badge count={activeAlertsCount} showZero>
               <WarningOutlined style={{ fontSize: 32, color: '#faad14' }} />
             </Badge>
             <div style={{ marginTop: 16 }}>
               <div style={{ fontSize: 24, fontWeight: 'bold' }}>{activeAlertsCount}</div>
-              <div style={{ color: '#8c8c8c' }}>Alertas Ativos</div>
+              <div style={{ color: token.colorTextDescription }}>Alertas Ativos</div>
             </div>
           </Card>
-          <Card style={{ flex: 1 }}>
+          <Card style={{ flex: 1, ...cardElevationStyle }}>
             <Badge count={criticalAlertsCount} showZero>
               <CloseCircleOutlined style={{ fontSize: 32, color: '#ff4d4f' }} />
             </Badge>
             <div style={{ marginTop: 16 }}>
               <div style={{ fontSize: 24, fontWeight: 'bold' }}>{criticalAlertsCount}</div>
-              <div style={{ color: '#8c8c8c' }}>Alertas Críticos</div>
+              <div style={{ color: token.colorTextDescription }}>Alertas Críticos</div>
             </div>
           </Card>
-          <Card style={{ flex: 1 }}>
+          <Card style={{ flex: 1, ...cardElevationStyle }}>
             <Badge count={alertas.filter(a => a.estado === 'resolvido').length} showZero>
               <CheckCircleOutlined style={{ fontSize: 32, color: '#52c41a' }} />
             </Badge>
@@ -214,13 +226,15 @@ export default function MonitoringPage() {
               <div style={{ fontSize: 24, fontWeight: 'bold' }}>
                 {alertas.filter(a => a.estado === 'resolvido').length}
               </div>
-              <div style={{ color: '#8c8c8c' }}>Resolvidos Hoje</div>
+              <div style={{ color: token.colorTextDescription }}>Resolvidos Hoje</div>
             </div>
           </Card>
         </div>
 
+        {}
         <Card
           title="Monitorização e Alertas"
+          style={cardElevationStyle}
           extra={
             <Space>
               <Select placeholder="Filtrar por Estado" style={{ width: 150 }}>

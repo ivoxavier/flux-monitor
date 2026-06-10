@@ -1,4 +1,5 @@
-import { Row, Col, Card, Statistic, Table, Tag, Select, DatePicker, Space } from 'antd';
+import { useState } from 'react';
+import { Row, Col, Card, Statistic, Table, Tag, Select, DatePicker, Space, theme } from 'antd';
 import {
   ArrowUpOutlined,
   ArrowDownOutlined,
@@ -8,14 +9,26 @@ import {
   SyncOutlined,
   FileTextOutlined,
   ApiOutlined,
+  CalendarOutlined,
 } from '@ant-design/icons';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useNavigate } from 'react-router-dom';
+import dayjs from 'dayjs';
 
 const { RangePicker } = DatePicker;
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  
+  const [dashboardDate, setDashboardDate] = useState<dayjs.Dayjs | null>(dayjs());
+  
+  const { token } = theme.useToken();
+  
+  const cardElevationStyle = {
+    boxShadow: token.boxShadowSecondary,
+    borderRadius: token.borderRadiusLG,
+    border: 'none',                
+  };
 
   const flowTrendData = [
     { hora: '00:00', fluxos: 12 },
@@ -123,20 +136,20 @@ export default function DashboardPage() {
       ),
     },
     {
-    title: 'Holding',
-    dataIndex: 'holding',
-    key: 'holding',
-  },
-  {
-    title: 'Departamento',
-    dataIndex: 'departamento',
-    key: 'departamento',
-  },
-  {
-    title: 'Cliente',
-    dataIndex: 'cliente',
-    key: 'cliente',
-  },
+      title: 'Holding',
+      dataIndex: 'holding',
+      key: 'holding',
+    },
+    {
+      title: 'Departamento',
+      dataIndex: 'departamento',
+      key: 'departamento',
+    },
+    {
+      title: 'Cliente',
+      dataIndex: 'cliente',
+      key: 'cliente',
+    },
     {
       title: 'Sistema Origem',
       dataIndex: 'origem',
@@ -186,9 +199,41 @@ export default function DashboardPage() {
   return (
     <div>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        
+        {}
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          flexWrap: 'wrap',
+          gap: 16,
+          background: token.colorBgContainer,
+          padding: '12px 16px',
+          borderRadius: token.borderRadiusLG,
+          boxShadow: token.boxShadowTertiary
+        }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: '18px', color: token.colorTextHeading }}>Painel de Controlo Operacional</h2>
+            <span style={{ color: token.colorTextDescription, fontSize: '13px' }}>
+              Visualizando dados operacionais do dia: <strong>{dashboardDate ? dashboardDate.format('DD/MM/YYYY') : 'Todos os dias'}</strong>
+            </span>
+          </div>
+          <Space size="middle">
+            <span style={{ color: token.colorTextDescription }}><CalendarOutlined /> Filtrar por Dia:</span>
+            <DatePicker 
+              value={dashboardDate} 
+              onChange={(date) => setDashboardDate(date)} 
+              format="DD/MM/YYYY"
+              allowClear={false} 
+              style={{ width: 160 }}
+            />
+          </Space>
+        </div>
+
+        {}
         <Row gutter={[16, 16]}>
           <Col xs={24} sm={12} lg={8}>
-            <Card>
+            <Card style={cardElevationStyle}>
               <Statistic
                 title="Fluxos Executados Hoje"
                 value={218}
@@ -199,7 +244,7 @@ export default function DashboardPage() {
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={8}>
-            <Card>
+            <Card style={cardElevationStyle}>
               <Statistic
                 title="Ficheiros Processados"
                 value={1892}
@@ -209,7 +254,7 @@ export default function DashboardPage() {
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={8}>
-            <Card>
+            <Card style={cardElevationStyle}>
               <Statistic
                 title="Pedidos HTTP Enviados"
                 value={456}
@@ -219,7 +264,7 @@ export default function DashboardPage() {
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={8}>
-            <Card>
+            <Card style={cardElevationStyle}>
               <Statistic
                 title="Pedidos HTTP Recebidos"
                 value={789}
@@ -229,7 +274,7 @@ export default function DashboardPage() {
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={8}>
-            <Card>
+            <Card style={cardElevationStyle}>
               <Statistic
                 title="Fluxos com Erro"
                 value={28}
@@ -240,7 +285,7 @@ export default function DashboardPage() {
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={8}>
-            <Card>
+            <Card style={cardElevationStyle}>
               <Statistic
                 title="Alertas Ativos"
                 value={12}
@@ -251,9 +296,10 @@ export default function DashboardPage() {
           </Col>
         </Row>
 
+        {}
         <Row gutter={[16, 16]}>
           <Col xs={24} lg={12}>
-            <Card title="Evolução dos Fluxos por Hora" bordered={false}>
+            <Card title="Evolução dos Fluxos por Hora" style={cardElevationStyle}>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={flowTrendData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -267,7 +313,7 @@ export default function DashboardPage() {
             </Card>
           </Col>
           <Col xs={24} lg={12}>
-            <Card title="Processamento de Ficheiros por Dia" bordered={false}>
+            <Card title="Processamento de Ficheiros por Dia" style={cardElevationStyle}>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={fileProcessingData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -282,9 +328,10 @@ export default function DashboardPage() {
           </Col>
         </Row>
 
+        {}
         <Row gutter={[16, 16]}>
           <Col xs={24} lg={12}>
-            <Card title="Distribuição de Erros por Tipo" bordered={false}>
+            <Card title="Distribuição de Erros por Tipo" style={cardElevationStyle}>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
@@ -307,8 +354,8 @@ export default function DashboardPage() {
             </Card>
           </Col>
           <Col xs={24} lg={12}>
-            <Card title="Fluxos Recentes" bordered={false}>
-              <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
+            <Card title="Filtros Rápidos" style={cardElevationStyle}>
+              <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'flex-start', gap: 12 }}>
                 <Select placeholder="Estado" style={{ width: 120 }}>
                   <Select.Option value="todos">Todos</Select.Option>
                   <Select.Option value="sucesso">Sucesso</Select.Option>
@@ -322,11 +369,13 @@ export default function DashboardPage() {
                   <Select.Option value="crm">CRM</Select.Option>
                 </Select>
               </Space>
+              <p style={{ color: token.colorTextDescription }}>Utilize os filtros acima para refinar a pesquisa rápida nos gráficos.</p>
             </Card>
           </Col>
         </Row>
 
-        <Card title="Fluxos Recentes" bordered={false}>
+        {/* Card Principal da Tabela de Dados */}
+        <Card title="Fluxos Recentes" style={cardElevationStyle}>
           <Space direction="vertical" size="middle" style={{ width: '100%' }}>
             <Space wrap>
               <RangePicker />
@@ -352,6 +401,7 @@ export default function DashboardPage() {
             <Table columns={columns} dataSource={recentFlows} pagination={{ pageSize: 5 }} scroll={{ x: 1800 }} />
           </Space>
         </Card>
+
       </Space>
     </div>
   );

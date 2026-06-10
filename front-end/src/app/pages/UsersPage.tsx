@@ -1,11 +1,19 @@
 import { useState } from 'react';
-import { Card, Table, Button, Space, Tag, Modal, Form, Input, Select, Switch, Popconfirm, message, Avatar } from 'antd';
+import { Card, Table, Tag, Button, Space, Select, Switch, Popconfirm, message, Avatar, Form, Input, Modal, theme } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, KeyOutlined, UserOutlined, MailOutlined, LockOutlined } from '@ant-design/icons';
 
 export default function UsersPage() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [form] = Form.useForm();
+
+  const { token } = theme.useToken();
+
+  const cardElevationStyle = {
+    boxShadow: token.boxShadowSecondary,
+    borderRadius: token.borderRadiusLG,
+    border: 'none',
+  };
 
   const utilizadores = [
     {
@@ -99,7 +107,8 @@ export default function UsersPage() {
       key: 'avatar',
       width: 60,
       render: (nome: string) => (
-        <Avatar style={{ background: '#1890ff' }}>
+
+        <Avatar style={{ background: token.colorPrimary }}>
           {nome.split(' ').map(n => n[0]).join('').toUpperCase()}
         </Avatar>
       ),
@@ -177,8 +186,10 @@ export default function UsersPage() {
 
   return (
     <div>
+      {}
       <Card
         title="Gestão de Utilizadores"
+        style={cardElevationStyle}
         extra={
           <Space>
             <Select placeholder="Filtrar por Perfil" style={{ width: 150 }}>

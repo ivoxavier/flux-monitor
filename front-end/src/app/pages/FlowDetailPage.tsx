@@ -1,10 +1,20 @@
-import { Card, Descriptions, Table, Tag, Tabs, Badge, Progress, Space, Statistic, Row, Col } from 'antd';
+import { Card, Descriptions, Table, Tag, Tabs, Badge, Progress, Space, Statistic, Row, Col, theme } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined, SyncOutlined, LineChartOutlined } from '@ant-design/icons';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useParams } from 'react-router-dom';
 
 export default function FlowDetailPage() {
   const { id } = useParams();
+  
+  // Aceder aos tokens globais de estilo
+  const { token } = theme.useToken();
+
+  // Estilo reutilizável para a elevação moderna dos cards
+  const cardElevationStyle = {
+    boxShadow: token.boxShadowSecondary,
+    borderRadius: token.borderRadiusLG,
+    border: 'none',
+  };
 
   const flowData = {
     nome: 'Importação Faturas SAP',
@@ -136,16 +146,19 @@ export default function FlowDetailPage() {
         </span>
       ),
       children: (
-        <Card>
+        <Card style={cardElevationStyle}>
           <pre
             style={{
-              background: '#f5f5f5',
+              // Usa token de cor de preenchimento para mudar de cor no dark mode
+              background: token.colorFillAlter, 
+              color: token.colorText,
               padding: 16,
-              borderRadius: 4,
+              borderRadius: token.borderRadiusSM,
               overflow: 'auto',
               maxHeight: 400,
               fontSize: 12,
               fontFamily: 'monospace',
+              border: `1px solid ${token.colorBorderSecondary}`
             }}
           >
             {logs}
@@ -165,7 +178,7 @@ export default function FlowDetailPage() {
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <Row gutter={[16, 16]}>
             <Col xs={24} md={8}>
-              <Card>
+              <Card style={cardElevationStyle}>
                 <Statistic
                   title="Tempo Médio de Execução"
                   value={flowData.tempoMedio}
@@ -174,7 +187,7 @@ export default function FlowDetailPage() {
               </Card>
             </Col>
             <Col xs={24} md={8}>
-              <Card>
+              <Card style={cardElevationStyle}>
                 <Statistic
                   title="Taxa de Sucesso"
                   value={flowData.taxaSucesso}
@@ -186,7 +199,7 @@ export default function FlowDetailPage() {
               </Card>
             </Col>
             <Col xs={24} md={8}>
-              <Card>
+              <Card style={cardElevationStyle}>
                 <Statistic
                   title="Execuções Hoje"
                   value={96}
@@ -195,7 +208,7 @@ export default function FlowDetailPage() {
               </Card>
             </Col>
           </Row>
-          <Card title="Performance ao Longo do Dia" bordered={false}>
+          <Card title="Performance ao Longo do Dia" style={cardElevationStyle}>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={performanceData}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -231,7 +244,9 @@ export default function FlowDetailPage() {
   return (
     <div>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        {/* Card Principal de Detalhes */}
         <Card
+          style={cardElevationStyle}
           title={
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span>{flowData.nome}</span>
@@ -262,7 +277,8 @@ export default function FlowDetailPage() {
           </Descriptions>
         </Card>
 
-        <Card>
+        {/* Card do Contentor das Tabs */}
+        <Card style={cardElevationStyle}>
           <Tabs items={tabItems} defaultActiveKey="historico" />
         </Card>
       </Space>

@@ -1,14 +1,16 @@
+// src/App.tsx
 import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ConfigProvider, theme } from 'antd';
 import ptPT from 'antd/locale/pt_PT';
-import AppLayout from './components/Layout';
+import AppLayout from './components/AppLayout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import ManifestsPage from './pages/ManifestsPage';
 import MonitoringPage from './pages/MonitoringPage';
-import UsersPage from './pages/UsersPage';
 import FlowDetailPage from './pages/FlowDetailPage';
+import SettingsPage from './pages/SettingsPage';
+import ProtectedRoute from './components/ProtectedRoute';
 
 export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -22,51 +24,81 @@ export default function App() {
           colorPrimary: '#1890ff',
           borderRadius: 6,
         },
+        components: {
+          Card: {
+            boxShadowTertiary: '0 4px 12px rgba(0, 0, 0, 0.05)', 
+            boxShadow: isDarkMode 
+              ? '0 4px 12px rgba(0, 0, 0, 0.3)' 
+              : '0 4px 16px rgba(0, 0, 0, 0.06)',
+            borderBg: 'transparent',
+          },
+        },
       }}
     >
       <Router>
         <Routes>
           <Route path="/" element={<LoginPage />} />
+          
+          {}
           <Route
             path="/dashboard"
             element={
-              <AppLayout isDarkMode={isDarkMode} onThemeChange={setIsDarkMode}>
-                <DashboardPage />
-              </AppLayout>
+              <ProtectedRoute allowedGroups={['admin', 'edi-developer', 'monitor']}>
+                <AppLayout isDarkMode={isDarkMode} onThemeChange={setIsDarkMode}>
+                  <DashboardPage />
+                </AppLayout>
+              </ProtectedRoute>
             }
           />
+          
+          {}
           <Route
             path="/manifests"
             element={
-              <AppLayout isDarkMode={isDarkMode} onThemeChange={setIsDarkMode}>
-                <ManifestsPage />
-              </AppLayout>
+              <ProtectedRoute allowedGroups={['admin', 'edi-developer']}>
+                <AppLayout isDarkMode={isDarkMode} onThemeChange={setIsDarkMode}>
+                  <ManifestsPage />
+                </AppLayout>
+              </ProtectedRoute>
             }
           />
+          
+          {}
           <Route
             path="/monitoring"
             element={
-              <AppLayout isDarkMode={isDarkMode} onThemeChange={setIsDarkMode}>
-                <MonitoringPage />
-              </AppLayout>
+              <ProtectedRoute allowedGroups={['admin', 'edi-developer', 'monitor']}>
+                <AppLayout isDarkMode={isDarkMode} onThemeChange={setIsDarkMode}>
+                  <MonitoringPage />
+                </AppLayout>
+              </ProtectedRoute>
             }
           />
+          
+          {}
           <Route
-            path="/users"
+            path="/settings"
             element={
-              <AppLayout isDarkMode={isDarkMode} onThemeChange={setIsDarkMode}>
-                <UsersPage />
-              </AppLayout>
+              <ProtectedRoute allowedGroups={['admin', 'edi-developer']}>
+                <AppLayout isDarkMode={isDarkMode} onThemeChange={setIsDarkMode}>
+                  <SettingsPage />
+                </AppLayout>
+              </ProtectedRoute>
             }
           />
+          
+          {}
           <Route
             path="/flow/:id"
             element={
-              <AppLayout isDarkMode={isDarkMode} onThemeChange={setIsDarkMode}>
-                <FlowDetailPage />
-              </AppLayout>
+              <ProtectedRoute allowedGroups={['admin', 'edi-developer', 'monitor']}>
+                <AppLayout isDarkMode={isDarkMode} onThemeChange={setIsDarkMode}>
+                  <FlowDetailPage />
+                </AppLayout>
+              </ProtectedRoute>
             }
           />
+          
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
