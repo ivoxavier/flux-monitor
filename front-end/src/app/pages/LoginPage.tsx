@@ -1,14 +1,21 @@
-import { Form, Input, Button, Card, Typography } from 'antd';
-import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Card, Typography, theme, Space } from 'antd';
+import { UserOutlined, LockOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { BRAND_CONFIG } from '../../config/brand'; // Importa a tua marca central
 
-const { Title, Link } = Typography;
+const { Title, Text, Link } = Typography;
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { token } = theme.useToken();
 
   const onFinish = (values: any) => {
     console.log('Login:', values);
+    
+    // Simulação: Guarda o grupo 'admin' por defeito ao entrar. 
+    // Podes alterar para 'monitor' ou 'edi-developer' para testar os bloqueios de rotas.
+    localStorage.setItem('userGroup', 'admin'); 
+    
     navigate('/dashboard');
   };
 
@@ -19,72 +26,107 @@ export default function LoginPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: token.colorBgLayout, // Fundo off-white idêntico ao painel principal
+        padding: 24,
       }}
     >
       <Card
         style={{
-          width: 400,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+          width: 420,
+          background: token.colorBgContainer,
+          // Sistema de elevação premium e cantos arredondados consistentes
+          boxShadow: token.boxShadowSecondary,
+          borderRadius: token.borderRadiusLG * 1.5, // Cantos ligeiramente mais suaves para o login
+          border: `1px solid ${token.colorBorderSecondary}`,
         }}
+        bodyStyle={{ padding: '40px 32px' }}
       >
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div
-            style={{
-              fontSize: 48,
-              fontWeight: 'bold',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              marginBottom: 8,
-            }}
-          >
-            FluxMonitor
+        {/* Cabeçalho da Marca Integrado */}
+        <div style={{ textAlign: 'center', marginBottom: 36 }}>
+          <Space direction="vertical" size="small" style={{ marginBottom: 12 }}>
+            <div style={{ 
+              display: 'inline-flex', 
+              padding: 12, 
+              background: token.colorFillAlter, 
+              borderRadius: token.borderRadiusLG 
+            }}>
+              {BRAND_CONFIG.icon}
+            </div>
+          </Space>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span style={{ 
+              fontSize: '24px', 
+              fontWeight: 800, 
+              letterSpacing: '-0.5px',
+              color: token.colorTextHeading 
+            }}>
+              {BRAND_CONFIG.logoText}
+            </span>
+            <Text type="secondary" style={{ fontSize: '13px', fontWeight: 500 }}>
+              {BRAND_CONFIG.clientCompany}
+            </Text>
           </div>
-          <Title level={4} style={{ margin: 0, color: '#666' }}>
-            Sistema de Monitorização EDI
-          </Title>
         </div>
 
+        {/* Formulário de Login */}
         <Form
           name="login"
           onFinish={onFinish}
           layout="vertical"
+          requiredMark={false}
           autoComplete="off"
         >
           <Form.Item
-            label="Email ou Username"
+            label={<Text strong style={{ fontSize: '13px' }}>Utilizador ou Email</Text>}
             name="username"
-            rules={[{ required: true, message: 'Por favor insira o seu email!' }]}
+            rules={[{ required: true, message: 'Insira o seu utilizador!' }]}
+            style={{ marginBottom: 20 }}
           >
             <Input
-              prefix={<UserOutlined />}
-              placeholder="email@exemplo.com"
+              prefix={<UserOutlined style={{ color: token.colorTextDescription }} />}
+              placeholder="ex: admin"
               size="large"
+              style={{ borderRadius: token.borderRadiusSM }}
             />
           </Form.Item>
 
           <Form.Item
-            label="Password"
+            label={
+              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                <Text strong style={{ fontSize: '13px' }}>Password</Text>
+                <Link style={{ fontSize: '12px', fontWeight: 500 }}>Esqueceu-se?</Link>
+              </div>
+            }
             name="password"
-            rules={[{ required: true, message: 'Por favor insira a sua password!' }]}
+            rules={[{ required: true, message: 'Insira a sua password!' }]}
+            style={{ marginBottom: 28 }}
           >
             <Input.Password
-              prefix={<LockOutlined />}
-              placeholder="Password"
+              prefix={<LockOutlined style={{ color: token.colorTextDescription }} />}
+              placeholder="••••••••"
               size="large"
+              style={{ borderRadius: token.borderRadiusSM }}
             />
           </Form.Item>
 
-          <Form.Item>
-            <Button type="primary" htmlType="submit" size="large" block>
-              Entrar
+          <Form.Item style={{ marginBottom: 0 }}>
+            <Button 
+              type="primary" 
+              htmlType="submit" 
+              size="large" 
+              block
+              icon={<ArrowRightOutlined />}
+              style={{ 
+                height: 44, 
+                borderRadius: token.borderRadiusSM,
+                fontWeight: 600,
+                boxShadow: '0 4px 12px rgba(24, 144, 255, 0.15)'
+              }}
+            >
+              Entrar na Plataforma
             </Button>
           </Form.Item>
-
-          <div style={{ textAlign: 'center' }}>
-            <Link>Esqueci-me da Password</Link>
-          </div>
         </Form>
       </Card>
     </div>
