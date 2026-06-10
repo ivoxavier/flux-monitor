@@ -8,3 +8,23 @@ dist/
 .env.local
 .env.*.local
 # .NET
+bin/
+obj/
+*.suo
+*.user
+*.sln.docstates
+.vs/
+.idea/
+.rider/
+*.userprefs
+appsettings.Development.json
+
+#Docker & Infrastructure ---
+.docker/
+flux_mysql_data/
+flux_postgres_data/
+
+#OS & IDE
+.DS_Store
+Thumbs.db
+.vscode/
