@@ -4,9 +4,27 @@ using FluxMonitor.Infrastructure.Authentication;
 using FluxMonitor.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
+if (Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") != "true")
+{
+    var currentDir = new DirectoryInfo(AppContext.BaseDirectory);
+    string? envPath = null;
 
-var rootPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..");
-DotNetEnv.Env.Load(Path.Combine(rootPath, ".env.local"));
+    while (currentDir != null)
+    {
+        var potentialFile = Path.Combine(currentDir.FullName, ".env.local");
+        if (File.Exists(potentialFile))
+        {
+            envPath = potentialFile;
+            break;
+        }
+        currentDir = currentDir.Parent;
+    }
+
+    if (envPath != null)
+    {
+        DotNetEnv.Env.Load(envPath);
+    }
+}
 
 
 var builder = WebApplication.CreateBuilder(args);
