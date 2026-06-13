@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # OPTION A (DEFAULT): MySQL
   flux-monitor-db:
