@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using FluxMonitor.Application.Interfaces;
 using FluxMonitor.Domain;
+using FluxMonitor.Domain.Entities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
@@ -17,7 +18,7 @@ public class JwtTokenGenerator : IJwtTokenGenerator
         _configuration = configuration;
     }
 
-    public string GenerateToken(User user)
+    public string GenerateToken(Users user)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? "ChaveSuperSecretaECompridaDoFluxMonitor2026!");

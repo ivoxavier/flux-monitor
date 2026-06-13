@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using FluxMonitor.Domain;
+using FluxMonitor.Domain.Entities;
+
 
 namespace FluxMonitor.Infrastructure.Data;
 
@@ -7,7 +9,7 @@ public class FluxMonitorDbContext : DbContext
 {
     public FluxMonitorDbContext(DbContextOptions<FluxMonitorDbContext> options) : base(options) { }
 
-    public DbSet<User> Users { get; set; }
+    public DbSet<Users> Users { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -15,7 +17,7 @@ public class FluxMonitorDbContext : DbContext
 
         // Temporary Admin Test User
         // pass "admin123"
-        modelBuilder.Entity<User>().HasData(new User
+        modelBuilder.Entity<Users>().HasData(new Users
         {
             Id = Guid.Parse("a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"),
             Username = "admin",

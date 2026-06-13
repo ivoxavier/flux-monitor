@@ -8,6 +8,6 @@ namespace FluxMonitor.Application.Interfaces
 {
     public interface IJwtTokenGenerator
     {
-        string GenerateToken(Domain.User user);
+        string GenerateToken(Users user);
     }
 }
