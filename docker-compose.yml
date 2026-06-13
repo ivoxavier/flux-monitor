@@ -6,11 +6,13 @@ services:
     image: mysql:8.0
     container_name: flux-monitor-db-mysql
     restart: always
+    env_file:
+      - .env.local
     environment:
-      MYSQL_ROOT_PASSWORD: root_password_secure
-      MYSQL_DATABASE: fluxmonitor_db
-      MYSQL_USER: flux_admin
-      MYSQL_PASSWORD: flux_password_123
+      MYSQL_ROOT_PASSWORD: ${ROOT_DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USER:-flux_admin}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
     ports:
       - "3306:3306"
     volumes:
@@ -26,16 +28,18 @@ services:
   #   image: postgres:16-alpine
   #   container_name: flux-monitor-db-postgres
   #   restart: always
+  #   env_file:
+  #     - .env.local
   #   environment:
-  #     POSTGRES_USER: flux_admin
-  #     POSTGRES_PASSWORD: flux_password_123
-  #     POSTGRES_DB: fluxmonitor_db
+  #     POSTGRES_USER: ${DB_USER:-flux_admin}
+  #     POSTGRES_PASSWORD: ${DB_PASSWORD}
+  #     POSTGRES_DB: ${DB_DATABASE}
   #   ports:
   #     - "5432:5432"
   #   volumes:
   #     - flux_postgres_data:/var/lib/postgresql/data
   #   healthcheck:
-  #     test: ["CMD-SHELL", "pg_isready -U flux_admin -d fluxmonitor_db"]
+  #     test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-flux_admin} -d ${DB_DATABASE}"]
   #     interval: 5s
   #     timeout: 5s
   #     retries: 5
@@ -45,9 +49,11 @@ services:
   #   image: mcr.microsoft.com/mssql/server:2022-latest
   #   container_name: flux-monitor-db-sqlserver
   #   restart: always
+  #   env_file:
+  #     - .env.local
   #   environment:
   #     - ACCEPT_EULA=Y
-  #     - MSSQL_SA_PASSWORD=YourStrong@Password123
+  #     - MSSQL_SA_PASSWORD=${ROOT_DB_PASSWORD}
   #     - MSSQL_PID=Developer
   #   ports:
   #     - "1433:1433"
@@ -60,6 +66,8 @@ services:
     build:
       context: ./back-end
       dockerfile: Dockerfile
+    env_file:
+      - .env.local
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=8080
@@ -67,15 +75,15 @@ services:
       # Environment variable for your API to detect the active provider (Suggested values: MySql, PostgreSql, SqlServer)
       - DatabaseProvider=MySql
       
-      # CONNECTION STRINGS CONFIGURATION:
+      # CONNECTION STRINGS CONFIGURATION (Uses the variables mapped in your .env.local):
       # Active (MySQL):
-      - ConnectionStrings__DefaultConnection=Server=flux-monitor-db;Database=fluxmonitor_db;Uid=flux_admin;Pwd=flux_password_123;
+      - ConnectionStrings__DefaultConnection=Server=flux-monitor-db;Database=${DB_DATABASE};Uid=${DB_USER:-flux_admin};Pwd=${DB_PASSWORD};
       
       # Alternative (PostgreSQL):
-      # - ConnectionStrings__DefaultConnection=Host=flux-monitor-db;Database=fluxmonitor_db;Username=flux_admin;Password=flux_password_123;
+      # - ConnectionStrings__DefaultConnection=Host=flux-monitor-db;Database=${DB_DATABASE};Username=${DB_USER:-flux_admin};Password=${DB_PASSWORD};
       
       # Alternative (SQL Server):
-      # - ConnectionStrings__DefaultConnection=Server=flux-monitor-db;Database=master;User Id=sa;Password=YourStrong@Password123;TrustServerCertificate=True;
+      # - ConnectionStrings__DefaultConnection=Server=flux-monitor-db;Database=master;User Id=sa;Password=${ROOT_DB_PASSWORD};TrustServerCertificate=True;
     ports:
       - "5001:8080"
     depends_on:
