@@ -4,6 +4,11 @@ using FluxMonitor.Infrastructure.Authentication;
 using FluxMonitor.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
+
+var rootPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..");
+DotNetEnv.Env.Load(Path.Combine(rootPath, ".env.local"));
+
+
 var builder = WebApplication.CreateBuilder(args);
 
 

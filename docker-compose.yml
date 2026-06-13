@@ -75,6 +75,12 @@ services:
       # Environment variable for your API to detect the active provider (Suggested values: MySql, PostgreSql, SqlServer)
       - DatabaseProvider=MySql
       
+      # Inject JWT KEY dynamically from .env.local
+      - Jwt__Key=${JWT_SECRET_KEY}
+      - Jwt__Issuer=FluxMonitorApi
+      - Jwt__Audience=FluxMonitorFrontend
+
+
       # CONNECTION STRINGS CONFIGURATION (Uses the variables mapped in your .env.local):
       # Active (MySQL):
       - ConnectionStrings__DefaultConnection=Server=flux-monitor-db;Database=${DB_DATABASE};Uid=${DB_USER:-flux_admin};Pwd=${DB_PASSWORD};
