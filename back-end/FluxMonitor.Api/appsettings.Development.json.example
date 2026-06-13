@@ -1,0 +1,10 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=localhost;Database=fluxmonitor_db;Uid=USER;Pwd=PASSWORD;"
+  },
+  "Jwt": {
+    "Key": "YOUR_SECRET_KEY",
+    "Issuer": "FluxMonitorApi",
+    "Audience": "FluxMonitorFrontend"
+  }
+}
