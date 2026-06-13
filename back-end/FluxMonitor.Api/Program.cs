@@ -3,6 +3,8 @@ using FluxMonitor.Application.Interfaces;
 using FluxMonitor.Infrastructure.Authentication;
 using FluxMonitor.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Pomelo.EntityFrameworkCore.MySql;
+
 
 if (Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") != "true")
 {
