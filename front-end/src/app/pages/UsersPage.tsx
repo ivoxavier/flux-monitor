@@ -1,13 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, Table, Tag, Button, Space, Select, Switch, Popconfirm, message, Avatar, Form, Input, Modal, theme } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, KeyOutlined, UserOutlined, MailOutlined, LockOutlined } from '@ant-design/icons';
+import { getTranslation } from '../../config/i18n';
 
 export default function UsersPage() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [utilizadores, setUtilizadores] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
 
+  
+  const [filterPerfil, setFilterPerfil] = useState('all');
+  const [filterEstado, setFilterEstado] = useState('all');
+
   const { token } = theme.useToken();
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
+  const t = getTranslation().usersPage;
 
   const cardElevationStyle = {
     boxShadow: token.boxShadowSecondary,
@@ -15,169 +25,162 @@ export default function UsersPage() {
     border: 'none',
   };
 
-  const utilizadores = [
-    {
-      key: '1',
-      nome: 'João Silva',
-      email: 'joao.silva@empresa.pt',
-      username: 'jsilva',
-      perfil: 'administrador',
-      estado: 'ativo',
-      ultimoLogin: '2026-06-07 14:30:00',
-    },
-    {
-      key: '2',
-      nome: 'Maria Santos',
-      email: 'maria.santos@empresa.pt',
-      username: 'msantos',
-      perfil: 'operador',
-      estado: 'ativo',
-      ultimoLogin: '2026-06-07 13:15:00',
-    },
-    {
-      key: '3',
-      nome: 'Pedro Costa',
-      email: 'pedro.costa@empresa.pt',
-      username: 'pcosta',
-      perfil: 'operador',
-      estado: 'ativo',
-      ultimoLogin: '2026-06-07 09:20:00',
-    },
-    {
-      key: '4',
-      nome: 'Ana Oliveira',
-      email: 'ana.oliveira@empresa.pt',
-      username: 'aoliveira',
-      perfil: 'consulta',
-      estado: 'ativo',
-      ultimoLogin: '2026-06-06 17:45:00',
-    },
-    {
-      key: '5',
-      nome: 'Carlos Ferreira',
-      email: 'carlos.ferreira@empresa.pt',
-      username: 'cferreira',
-      perfil: 'operador',
-      estado: 'inativo',
-      ultimoLogin: '2026-05-30 11:10:00',
-    },
-  ];
+  
+  const carregarUtilizadores = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${baseUrl}/api/users?role=${filterPerfil}&status=${filterEstado}`);
+      if (!response.ok) throw new Error(t.errLoadList);
+      const data = await response.json();
+      setUtilizadores(data);
+    } catch (err: any) {
+      message.error(err.message || t.errServerComm);
+    } finally {
+      setLoading(false);
+    }
+  }, [baseUrl, filterPerfil, filterEstado, t.errLoadList, t.errServerComm]);
 
-  const getPerfilTag = (perfil: string) => {
+  useEffect(() => {
+    carregarUtilizadores();
+  }, [carregarUtilizadores]);
+
+  const getPerfilTag = (role: string) => {
     const config = {
-      administrador: { color: 'red', text: 'Administrador' },
-      operador: { color: 'blue', text: 'Operador' },
-      consulta: { color: 'default', text: 'Consulta' },
+      admin: { color: 'red', text: t.roles.admin },
+      operador: { color: 'blue', text: t.roles.operador },
+      'edi-developer': { color: 'geekblue', text: t.roles['edi-developer'] },
+      consulta: { color: 'default', text: t.roles.consulta },
     };
-    const { color, text } = config[perfil as keyof typeof config];
-    return <Tag color={color}>{text}</Tag>;
+    const key = role as keyof typeof config;
+    const item = config[key] || { color: 'default', text: role };
+    return <Tag color={item.color}>{item.text}</Tag>;
   };
 
+  
   const handleEdit = (record: any) => {
     form.setFieldsValue({
-      ...record,
-      estado: record.estado === 'ativo',
+      nome: record.name,
+      email: record.email,
+      username: record.username,
+      perfil: record.role,
+      estado: record.status === 'enabled',
     });
     setSelectedUser(record);
     setIsModalVisible(true);
   };
 
-  const handleDelete = (key: string) => {
-    message.success('Utilizador desativado com sucesso!');
+  const handleDelete = async (record: any) => {
+    try {
+      const response = await fetch(`${baseUrl}/api/users/${record.key}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error(t.errAction);
+      
+      message.success(t.successStatusUpdate);
+      carregarUtilizadores();
+    } catch (err: any) {
+      message.error(err.message);
+    }
   };
 
-  const handleResetPassword = (record: any) => {
-    message.success(`Password reposta para ${record.email}`);
+  const handleResetPassword = async (record: any) => {
+    try {
+      const response = await fetch(`${baseUrl}/api/users/${record.key}/reset-password`, {
+        method: 'POST',
+      });
+      if (!response.ok) throw new Error(t.errResetPass);
+      const data = await response.json();
+      message.success(data.message || 'Password reset done!');
+    } catch (err: any) {
+      message.error(err.message);
+    }
   };
 
   const handleModalOk = () => {
-    form.validateFields().then((values) => {
-      console.log('Form values:', values);
-      message.success(selectedUser ? 'Utilizador atualizado!' : 'Utilizador criado com sucesso!');
-      setIsModalVisible(false);
-      form.resetFields();
-      setSelectedUser(null);
+    form.validateFields().then(async (values) => {
+      try {
+        const isEditing = !!selectedUser;
+        const url = isEditing ? `${baseUrl}/api/users/${selectedUser.key}` : `${baseUrl}/api/users`;
+        const method = isEditing ? 'PUT' : 'POST';
+
+        const payload = {
+          name: values.nome,
+          email: values.email,
+          username: values.username,
+          password: values.password,
+          role: values.perfil,
+          isActive: !!values.estado,
+        };
+
+        const response = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const errMsg = await response.text();
+          throw new Error(errMsg || t.errSubmit);
+        }
+
+        message.success(isEditing ? t.successUpdate : t.successCreate);
+        setIsModalVisible(false);
+        form.resetFields();
+        setSelectedUser(null);
+        carregarUtilizadores();
+      } catch (err: any) {
+        message.error(err.message);
+      }
     });
   };
+
 
   const columns = [
     {
       title: '',
-      dataIndex: 'nome',
+      dataIndex: 'name',
       key: 'avatar',
       width: 60,
-      render: (nome: string) => (
-
+      render: (name: string) => (
         <Avatar style={{ background: token.colorPrimary }}>
-          {nome.split(' ').map(n => n[0]).join('').toUpperCase()}
+          {(name || 'U').split(' ').map(n => n[0]).join('').toUpperCase()}
         </Avatar>
       ),
     },
+    { title: t.table.name, dataIndex: 'name', key: 'name' },
+    { title: t.table.email, dataIndex: 'email', key: 'email' },
+    { title: t.table.username, dataIndex: 'username', key: 'username' },
+    { title: t.table.role, dataIndex: 'role', key: 'role', render: (role: string) => getPerfilTag(role) },
     {
-      title: 'Nome',
-      dataIndex: 'nome',
-      key: 'nome',
-    },
-    {
-      title: 'Email',
-      dataIndex: 'email',
-      key: 'email',
-    },
-    {
-      title: 'Username',
-      dataIndex: 'username',
-      key: 'username',
-    },
-    {
-      title: 'Perfil',
-      dataIndex: 'perfil',
-      key: 'perfil',
-      render: (perfil: string) => getPerfilTag(perfil),
-    },
-    {
-      title: 'Estado',
-      dataIndex: 'estado',
-      key: 'estado',
-      render: (estado: string) => (
-        <Tag color={estado === 'ativo' ? 'success' : 'default'}>
-          {estado.toUpperCase()}
+      title: t.table.status,
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => (
+        <Tag color={status === 'enabled' ? 'success' : 'default'}>
+          {status === 'enabled' ? t.switchActive.toUpperCase() : t.switchInactive.toUpperCase()}
         </Tag>
       ),
     },
+    { title: t.table.lastLogin, dataIndex: 'lastLogin', key: 'lastLogin' },
     {
-      title: 'Último Login',
-      dataIndex: 'ultimoLogin',
-      key: 'ultimoLogin',
-    },
-    {
-      title: 'Ações',
+      title: t.table.actions,
       key: 'acoes',
       render: (_: any, record: any) => (
         <Space>
-          <Button
-            type="text"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          />
+          <Button type="text" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
           <Popconfirm
-            title="Repor password para este utilizador?"
+            title={t.popconfirmResetPass}
             onConfirm={() => handleResetPassword(record)}
-            okText="Sim"
-            cancelText="Não"
+            okText={t.yes} cancelText={t.no}
           >
             <Button type="text" icon={<KeyOutlined />} />
           </Popconfirm>
           <Popconfirm
-            title={`Tem a certeza que deseja ${record.estado === 'ativo' ? 'desativar' : 'reativar'} este utilizador?`}
-            onConfirm={() => handleDelete(record.key)}
-            okText="Sim"
-            cancelText="Não"
+            title={t.popconfirmToggleActive}
+            onConfirm={() => handleDelete(record)}
+            okText={t.yes} cancelText={t.no}
           >
-            <Button
-              type="text"
-              danger={record.estado === 'ativo'}
-              icon={<DeleteOutlined />}
-            />
+            <Button type="text" danger={record.status === 'enabled'} icon={<DeleteOutlined />} />
           </Popconfirm>
         </Space>
       ),
@@ -186,22 +189,22 @@ export default function UsersPage() {
 
   return (
     <div>
-      {}
       <Card
-        title="Gestão de Utilizadores"
+        title={t.cardTitle}
         style={cardElevationStyle}
         extra={
           <Space>
-            <Select placeholder="Filtrar por Perfil" style={{ width: 150 }}>
-              <Select.Option value="todos">Todos</Select.Option>
-              <Select.Option value="administrador">Administrador</Select.Option>
-              <Select.Option value="operador">Operador</Select.Option>
-              <Select.Option value="consulta">Consulta</Select.Option>
+            {}
+            <Select value={filterPerfil} onChange={setFilterPerfil} style={{ width: 160 }}>
+              <Select.Option value="all">{t.filters.allRoles}</Select.Option>
+              <Select.Option value="admin">{t.roles.admin}</Select.Option>
+              <Select.Option value="operador">{t.roles.operador}</Select.Option>
+              <Select.Option value="consulta">{t.roles.consulta}</Select.Option>
             </Select>
-            <Select placeholder="Estado" style={{ width: 120 }}>
-              <Select.Option value="todos">Todos</Select.Option>
-              <Select.Option value="ativo">Ativos</Select.Option>
-              <Select.Option value="inativo">Inativos</Select.Option>
+            <Select value={filterEstado} onChange={setFilterEstado} style={{ width: 120 }}>
+              <Select.Option value="all">{t.filters.allStatus}</Select.Option>
+              <Select.Option value="enabled">{t.filters.active}</Select.Option>
+              <Select.Option value="disabled">{t.filters.inactive}</Select.Option>
             </Select>
             <Button
               type="primary"
@@ -212,16 +215,16 @@ export default function UsersPage() {
                 setIsModalVisible(true);
               }}
             >
-              Novo Utilizador
+              {t.btnNewUser}
             </Button>
           </Space>
         }
       >
-        <Table columns={columns} dataSource={utilizadores} pagination={{ pageSize: 10 }} />
+        <Table columns={columns} dataSource={utilizadores} loading={loading} pagination={{ pageSize: 10 }} />
       </Card>
 
       <Modal
-        title={selectedUser ? 'Editar Utilizador' : 'Criar Utilizador'}
+        title={selectedUser ? t.modal.titleEdit : t.modal.titleCreate}
         open={isModalVisible}
         onOk={handleModalOk}
         onCancel={() => {
@@ -230,56 +233,49 @@ export default function UsersPage() {
           setSelectedUser(null);
         }}
         width={600}
+        okText={t.yes}
+        cancelText={t.no}
       >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            name="nome"
-            label="Nome Completo"
-            rules={[{ required: true, message: 'Por favor insira o nome completo!' }]}
-          >
+        {/* 🟢 Adicionado initialValues para garantir estabilidade no Switch de estado */}
+        <Form form={form} layout="vertical" initialValues={{ estado: true, perfil: 'operador' }}>
+          <Form.Item name="nome" label={t.modal.labelFullName} rules={[{ required: true, message: t.modal.reqFullName }]}>
             <Input prefix={<UserOutlined />} placeholder="Ex: João Silva" />
           </Form.Item>
           <Form.Item
             name="email"
-            label="Email"
+            label={t.modal.labelEmail}
             rules={[
-              { required: true, message: 'Por favor insira o email!' },
-              { type: 'email', message: 'Email inválido!' },
+              { required: true, message: t.modal.reqEmail },
+              { type: 'email', message: t.modal.valEmail },
             ]}
           >
             <Input prefix={<MailOutlined />} placeholder="email@empresa.pt" />
           </Form.Item>
-          <Form.Item
-            name="username"
-            label="Username"
-            rules={[{ required: true, message: 'Por favor insira o username!' }]}
-          >
+          <Form.Item name="username" label={t.modal.labelUsername} rules={[{ required: true, message: t.modal.reqUsername }]}>
             <Input prefix={<UserOutlined />} placeholder="username" />
           </Form.Item>
           {!selectedUser && (
             <>
               <Form.Item
                 name="password"
-                label="Password"
+                label={t.modal.labelPassword}
                 rules={[
-                  { required: true, message: 'Por favor insira a password!' },
-                  { min: 6, message: 'Password deve ter no mínimo 6 caracteres!' },
+                  { required: true, message: t.modal.reqPassword },
+                  { min: 6, message: t.modal.valPasswordMin },
                 ]}
               >
                 <Input.Password prefix={<LockOutlined />} placeholder="Password" />
               </Form.Item>
               <Form.Item
                 name="confirmPassword"
-                label="Confirmar Password"
+                label={t.modal.labelConfirmPassword}
                 dependencies={['password']}
                 rules={[
-                  { required: true, message: 'Por favor confirme a password!' },
+                  { required: true, message: t.modal.reqConfirmPassword },
                   ({ getFieldValue }) => ({
                     validator(_, value) {
-                      if (!value || getFieldValue('password') === value) {
-                        return Promise.resolve();
-                      }
-                      return Promise.reject(new Error('As passwords não coincidem!'));
+                      if (!value || getFieldValue('password') === value) return Promise.resolve();
+                      return Promise.reject(new Error(t.modal.valConfirmPasswordMatch));
                     },
                   }),
                 ]}
@@ -288,19 +284,19 @@ export default function UsersPage() {
               </Form.Item>
             </>
           )}
-          <Form.Item
-            name="perfil"
-            label="Perfil"
-            rules={[{ required: true, message: 'Por favor selecione o perfil!' }]}
-          >
-            <Select placeholder="Selecione o perfil">
-              <Select.Option value="administrador">Administrador</Select.Option>
-              <Select.Option value="operador">Operador</Select.Option>
-              <Select.Option value="consulta">Consulta</Select.Option>
-            </Select>
-          </Form.Item>
-          <Form.Item name="estado" label="Estado" valuePropName="checked">
-            <Switch checkedChildren="Ativo" unCheckedChildren="Inativo" />
+          <Form.Item 
+  name="perfil" 
+  label={t.modal.labelRole} 
+  rules={[{ required: true, message: t.modal.reqRole }]}
+>
+  <Select placeholder={t.modal.placeholderRole}>
+    <Select.Option value="admin">{t.roles.admin}</Select.Option>
+    <Select.Option value="operador">{t.roles.operador}</Select.Option>
+    <Select.Option value="consulta">{t.roles.consulta}</Select.Option>
+  </Select>
+</Form.Item>
+          <Form.Item name="estado" label={t.modal.labelStatus} valuePropName="checked">
+            <Switch checkedChildren={t.switchActive} unCheckedChildren={t.switchInactive} />
           </Form.Item>
         </Form>
       </Modal>

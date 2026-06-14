@@ -3,6 +3,7 @@ using System;
 using FluxMonitor.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FluxMonitor.Infrastructure.Migrations
 {
     [DbContext(typeof(FluxMonitorDbContext))]
-    partial class FluxMonitorDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260614164025_AddManifestsTableEnriched")]
+    partial class AddManifestsTableEnriched
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

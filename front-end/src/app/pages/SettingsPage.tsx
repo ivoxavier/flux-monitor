@@ -1,9 +1,10 @@
 // src/pages/SettingsPage.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, Tabs, Form, Switch, InputNumber, Button, Space, Typography, message, theme, Modal, Descriptions, Badge, Timeline, Input } from 'antd';
 import { SettingOutlined, UserOutlined, SaveOutlined, InfoCircleOutlined, CloudDownloadOutlined, GithubOutlined, GlobalOutlined, ShopOutlined, AlertOutlined } from '@ant-design/icons';
 import UsersPage from './UsersPage';
 import { BRAND_CONFIG } from '../../config/brand'; 
+import { getTranslation } from '../../config/i18n';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -13,23 +14,50 @@ export default function SettingsPage() {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
-
-  // Estado local para monitorizar o switch mestre de ações em tempo real (para efeitos de desativar os sub-items)
   const [actionsEnabled, setActionsEnabled] = useState(true);
+  const [pageLoading, setPageLoading] = useState(false);
 
-  const cardElevationStyle = {
-    boxShadow: token.boxShadowSecondary,
-    borderRadius: token.borderRadiusLG,
-    border: 'none',
-  };
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
-  const handleSaveSettings = (values: any) => {
-    console.log('Todas as configurações gravadas:', values);
-    message.success('Configurações gravadas com sucesso!');
+  
+  const t = getTranslation().settings;
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch(`${baseUrl}/api/settings`);
+        if (!response.ok) throw new Error(t.errLoad);
+        const data = await response.json();
+        
+        form.setFieldsValue(data);
+        setActionsEnabled(data.enableGlobalErrorActions);
+      } catch (err: any) {
+        message.error(err.message || t.errServer);
+      }
+    };
+    fetchSettings();
+  }, [form, baseUrl, t.errLoad, t.errServer]);
+
+  const handleSaveSettings = async (values: any) => {
+    setPageLoading(true);
+    try {
+      const response = await fetch(`${baseUrl}/api/settings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
+      });
+
+      if (!response.ok) throw new Error(t.errSave);
+      
+      message.success(t.successSave);
+    } catch (err: any) {
+      message.error(err.message || t.errGenericSave);
+    } finally {
+      setPageLoading(false);
+    }
   };
 
   const handleValuesChange = (changedValues: any) => {
-    // Se o switch mestre mudar, atualiza o estado para controlar a interface
     if (changedValues.enableGlobalErrorActions !== undefined) {
       setActionsEnabled(changedValues.enableGlobalErrorActions);
     }
@@ -37,13 +65,19 @@ export default function SettingsPage() {
 
   const handleCheckUpdates = () => {
     setCheckingUpdate(true);
-    message.loading({ content: 'A verificar se existem novas versões...', key: 'updatable' });
+    message.loading({ content: t.about.checkingLoading, key: 'updatable' });
     
     setTimeout(() => {
       setCheckingUpdate(false);
-      message.success({ content: 'Nova atualização encontrada! (v2.1.0)', key: 'updatable', duration: 2 });
+      message.success({ content: t.about.updateFound, key: 'updatable', duration: 2 });
       setIsModalOpen(true);
     }, 1500);
+  };
+
+  const cardElevationStyle = {
+    boxShadow: token.boxShadowSecondary,
+    borderRadius: token.borderRadiusLG,
+    border: 'none',
   };
 
   const tabItems = [
@@ -52,7 +86,7 @@ export default function SettingsPage() {
       label: (
         <span>
           <SettingOutlined />
-          Configurações Flux-Monitor
+          {t.tabs.fluxMonitor}
         </span>
       ),
       children: (
@@ -67,43 +101,42 @@ export default function SettingsPage() {
             cleanManifests: false,
             manifestsRetentionDays: 90,
             clientCompany: BRAND_CONFIG.clientCompany, 
-            // Valores iniciais para a nova secção de tratamento de erros
             enableGlobalErrorActions: true,
             sendEmailOnFailure: true,
             triggerWebhookOnFailure: false,
           }}
           style={{ maxWidth: 500, marginTop: 16 }}
         >
-          {/* BLOCO: Identidade e Customização */}
-          <Title level={5} style={{ marginBottom: 16 }}>Identidade Visual (White-Label)</Title>
+          {}
+          <Title level={5} style={{ marginBottom: 16 }}>{t.labels.whiteLabelTitle}</Title>
           <Card size="small" style={{ marginBottom: 24, background: token.colorFillAlter }}>
             <Form.Item
               name="clientCompany"
-              label="Nome da Empresa / Cliente"
-              rules={[{ required: true, message: 'Por favor insira o nome da empresa!' }]}
+              label={t.labels.companyName}
+              rules={[{ required: true, message: t.labels.companyRequired }]}
             >
               <Input 
                 prefix={<ShopOutlined style={{ color: token.colorTextDescription }} />} 
-                placeholder="Ex: Nome do Cliente S.A." 
+                placeholder={t.labels.companyPlaceholder} 
               />
             </Form.Item>
           </Card>
 
-          {/* NOVO BLOCO: Políticas Globais de Erro do Flux-Monitor */}
+          {}
           <Title level={5} style={{ marginBottom: 16 }}>
-            <Space><AlertOutlined style={{ color: token.colorWarning }} /> Ações Globais em Caso de Erro</Space>
+            <Space><AlertOutlined style={{ color: token.colorWarning }} /> {t.labels.errorActionsTitle}</Space>
           </Title>
           <Card size="small" style={{ marginBottom: 24, background: token.colorFillAlter }}>
             <Form.Item
               name="enableGlobalErrorActions"
-              label="Executar Ações Automáticas de Erro (Geral)"
+              label={t.labels.enableGlobalErrors}
               valuePropName="checked"
-              extra="Se desativado, o FluxMonitor não irá disparar nenhuma ação externa (emails, webhooks) para NENHUM fluxo que falhe."
+              extra={t.labels.enableGlobalErrorsExtra}
             >
-              <Switch checkedChildren="Ativo" unCheckedChildren="Inativo" danger />
+              <Switch checkedChildren={t.labels.switchActive} unCheckedChildren={t.labels.switchInactive} danger />
             </Form.Item>
 
-            {/* Sub-ações dependentes do switch mestre */}
+            {}
             <div style={{ 
               opacity: actionsEnabled ? 1 : 0.5, 
               transition: 'opacity 0.3s', 
@@ -113,37 +146,37 @@ export default function SettingsPage() {
             }}>
               <Form.Item
                 name="sendEmailOnFailure"
-                label="Enviar Notificação por Email"
+                label={t.labels.sendEmail}
                 valuePropName="checked"
               >
-                <Switch checkedChildren="Sim" unCheckedChildren="Não" disabled={!actionsEnabled} />
+                <Switch checkedChildren={t.labels.switchYes} unCheckedChildren={t.labels.switchNo} disabled={!actionsEnabled} />
               </Form.Item>
 
               <Form.Item
                 name="triggerWebhookOnFailure"
-                label="Disparar Webhooks / Alertas de Integração"
+                label={t.labels.triggerWebhook}
                 valuePropName="checked"
                 style={{ marginBottom: 8 }}
               >
-                <Switch checkedChildren="Sim" unCheckedChildren="Não" disabled={!actionsEnabled} />
+                <Switch checkedChildren={t.labels.switchYes} unCheckedChildren={t.labels.switchNo} disabled={!actionsEnabled} />
               </Form.Item>
             </div>
           </Card>
 
-          {/* Bloqueio de Manutenção e Jobs */}
-          <Title level={5} style={{ marginBottom: 16 }}>Jobs de Housekeeping</Title>
+          {}
+          <Title level={5} style={{ marginBottom: 16 }}>{t.labels.housekeepingTitle}</Title>
           
           <Card size="small" style={{ marginBottom: 16, background: token.colorFillAlter }}>
             <Form.Item
               name="cleanLogs"
-              label="Limpeza Automática de Logs"
+              label={t.labels.cleanLogs}
               valuePropName="checked"
             >
-              <Switch checkedChildren="Ativo" unCheckedChildren="Inativo" />
+              <Switch checkedChildren={t.labels.switchActive} unCheckedChildren={t.labels.switchInactive} />
             </Form.Item>
             <Form.Item
               name="logsRetentionDays"
-              label="Tempo de Retenção de Logs (Dias)"
+              label={t.labels.logsRetention}
             >
               <InputNumber min={1} style={{ width: '100%' }} />
             </Form.Item>
@@ -152,22 +185,22 @@ export default function SettingsPage() {
           <Card size="small" style={{ marginBottom: 24, background: token.colorFillAlter }}>
             <Form.Item
               name="cleanManifests"
-              label="Limpeza de Histórico de Manifestos"
+              label={t.labels.cleanManifests}
               valuePropName="checked"
             >
-              <Switch checkedChildren="Ativo" unCheckedChildren="Inativo" />
+              <Switch checkedChildren={t.labels.switchActive} unCheckedChildren={t.labels.switchInactive} />
             </Form.Item>
             <Form.Item
               name="manifestsRetentionDays"
-              label="Tempo de Retenção de Manifestos (Dias)"
+              label={t.labels.manifestsRetention}
             >
               <InputNumber min={1} style={{ width: '100%' }} />
             </Form.Item>
           </Card>
 
           <Form.Item>
-            <Button type="primary" icon={<SaveOutlined />} htmlType="submit">
-              Gravar Definições
+            <Button type="primary" icon={<SaveOutlined />} htmlType="submit" loading={pageLoading}>
+              {t.labels.saveBtn}
             </Button>
           </Form.Item>
         </Form>
@@ -178,7 +211,7 @@ export default function SettingsPage() {
       label: (
         <span>
           <UserOutlined />
-          Gestão de Utilizadores
+          {t.tabs.users}
         </span>
       ),
       children: (
@@ -192,27 +225,27 @@ export default function SettingsPage() {
       label: (
         <span>
           <InfoCircleOutlined />
-          Acerca
+          {t.tabs.about}
         </span>
       ),
       children: (
         <div style={{ marginTop: 16, maxWidth: 800 }}>
-          <Title level={4} style={{ marginBottom: 16 }}>Sobre a Aplicação</Title>
+          <Title level={4} style={{ marginBottom: 16 }}>{t.about.title}</Title>
           <Paragraph style={{ color: token.colorTextDescription }}>
-            O <strong>FluxMonitor</strong> é uma plataforma centralizada de monitorização e gestão de fluxos de dados, ficheiros de integração EDI e conectores de sistemas periféricos operacionais.
+            {t.about.description}
           </Paragraph>
 
           <Card style={{ background: token.colorFillAlter, border: 'none', marginBottom: 24 }}>
-            <Descriptions title="Informações do Sistema" bordered column={1} size="small">
-              <Descriptions.Item label="Nome do Software">FluxMonitor Dashboard</Descriptions.Item>
-              <Descriptions.Item label="Versão Atual">
+            <Descriptions title={t.about.sysInfo} bordered column={1} size="small">
+              <Descriptions.Item label={t.about.softwareName}>FluxMonitor Dashboard</Descriptions.Item>
+              <Descriptions.Item label={t.about.currentVersion}>
                 <Space>
                   <Text code>v2.0.4-stable</Text>
-                  <Badge status="success" text="Atualizado" />
+                  <Badge status="success" text={t.about.statusUpdated} />
                 </Space>
               </Descriptions.Item>
-              <Descriptions.Item label="Ambiente">Produção</Descriptions.Item>
-              <Descriptions.Item label="Repositório Git">
+              <Descriptions.Item label={t.about.environment}>{t.about.envProd}</Descriptions.Item>
+              <Descriptions.Item label={t.about.repo}>
                 <Space>
                   <GithubOutlined />
                   <a href="https://github.com/empresa/flux-monitor" target="_blank" rel="noreferrer">
@@ -220,7 +253,7 @@ export default function SettingsPage() {
                   </a>
                 </Space>
               </Descriptions.Item>
-              <Descriptions.Item label="Suporte Técnico">
+              <Descriptions.Item label={t.about.support}>
                 <Space>
                   <GlobalOutlined />
                   <Text copyable>suporte.edi@empresa.com</Text>
@@ -235,7 +268,7 @@ export default function SettingsPage() {
             loading={checkingUpdate}
             onClick={handleCheckUpdates}
           >
-            Procurar Atualizações
+            {t.about.checkUpdatesBtn}
           </Button>
         </div>
       ),
@@ -244,7 +277,7 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <Card style={cardElevationStyle} title="Configurações do Sistema">
+      <Card style={cardElevationStyle} title={t.pageTitle}>
         <Tabs defaultActiveKey="flux-monitor" items={tabItems} />
       </Card>
 
@@ -252,61 +285,33 @@ export default function SettingsPage() {
         title={
           <Space>
             <CloudDownloadOutlined style={{ color: token.colorPrimary }} />
-            <span>Nova Atualização Disponível! (v2.1.0)</span>
+            <span>{t.modal.title}</span>
           </Space>
         }
         open={isModalOpen}
         onOk={() => {
           setIsModalOpen(false);
-          message.success('Download da nova versão iniciado em segundo plano.');
+          message.success(t.modal.downloadStarted);
         }}
         onCancel={() => setIsModalOpen(false)}
-        okText="Atualizar Agora"
-        cancelText="Mais Tarde"
+        okText={t.modal.okText}
+        cancelText={t.modal.cancelText}
         centered
       >
         <div style={{ marginTop: 16, marginBottom: 16 }}>
-          <Text strong>Changelog / Histórico de Alterações (v2.1.0):</Text>
+          <Text strong>{t.modal.changelogTitle}</Text>
         </div>
         
         <Timeline
           items={[
-            {
-              color: 'green',
-              children: (
-                <div>
-                  <Text strong>[Melhoria]</Text> Otimização nos filtros de data e carregamento do Dashboard global.
-                </div>
-              ),
-            },
-            {
-              color: 'green',
-              children: (
-                <div>
-                  <Text strong>[Funcionalidade]</Text> Novo sistema de controlo de acessos por grupo (RBAC) para Perfis de Admin, Developer e Monitors.
-                </div>
-              ),
-            },
-            {
-              color: 'blue',
-              children: (
-                <div>
-                  <Text strong>[Interface]</Text> Atualização visual completa do Sider e do Header flutuante (Estilo Bento Grid).
-                </div>
-              ),
-            },
-            {
-              color: 'red',
-              children: (
-                <div>
-                  <Text strong>[Correção]</Text> Resolução de bugs no cálculo do tempo de retenção nos Jobs de Housekeeping.
-                </div>
-              ),
-            },
+            { color: 'green', children: <div>{t.modal.items.improvement}</div> },
+            { color: 'green', children: <div>{t.modal.items.feature}</div> },
+            { color: 'blue', children: <div>{t.modal.items.interface}</div> },
+            { color: 'red', children: <div>{t.modal.items.fix}</div> },
           ]}
         />
         <Paragraph type="secondary" style={{ marginTop: 16, fontSize: '12px' }}>
-          * Recomenda-se a aplicação deste patch fora do horário de pico operacional para evitar interrupções nos serviços de monitorização.
+          {t.modal.warningText}
         </Paragraph>
       </Modal>
     </div>

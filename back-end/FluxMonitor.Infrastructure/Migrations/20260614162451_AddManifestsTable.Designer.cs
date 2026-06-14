@@ -3,6 +3,7 @@ using System;
 using FluxMonitor.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FluxMonitor.Infrastructure.Migrations
 {
     [DbContext(typeof(FluxMonitorDbContext))]
-    partial class FluxMonitorDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260614162451_AddManifestsTable")]
+    partial class AddManifestsTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -177,10 +180,10 @@ namespace FluxMonitor.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"),
-                            CreatedAt = new DateTime(2026, 6, 14, 16, 40, 24, 195, DateTimeKind.Utc).AddTicks(7110),
+                            CreatedAt = new DateTime(2026, 6, 14, 16, 24, 50, 720, DateTimeKind.Utc).AddTicks(8110),
                             Email = "admin@fluxmonitor.com",
                             IsActive = true,
-                            PasswordHash = "$2a$11$2L2JfnYiLIe64YVHHwYkB.XicetllwWMJGZgnGWWmZJIiIIOFM.py",
+                            PasswordHash = "$2a$11$YH.cvlziwSMsg6nYPRm5uuaJBWHpLSmezwIfnvHXMQWxROrChSLAC",
                             UserGroup = "admin",
                             Username = "admin"
                         });

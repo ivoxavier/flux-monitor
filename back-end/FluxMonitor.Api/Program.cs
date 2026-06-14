@@ -122,6 +122,9 @@ app.UseCors();
 
 // registor the endpoints
 app.MapAuthEndpoints(); 
+app.MapSettingsEndpoints();
+app.MapUserEndpoints();
+app.MapManifestEndpoints();
 
 
 app.Run();
