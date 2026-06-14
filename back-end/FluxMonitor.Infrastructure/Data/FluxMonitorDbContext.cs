@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using FluxMonitor.Domain;
+using BCrypt.Net;
 using FluxMonitor.Domain.Entities;
 
 
@@ -12,19 +12,37 @@ public class FluxMonitorDbContext : DbContext
     public DbSet<Users> Users { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        base.OnModelCreating(modelBuilder);
+{
+    base.OnModelCreating(modelBuilder);
 
-        // Temporary Admin Test User
-        // pass "admin123"
-        modelBuilder.Entity<Users>().HasData(new Users
-        {
-            Id = Guid.Parse("a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"),
-            Username = "admin",
-            Email = "admin@fluxmonitor.com",
-            // Hash "admin123" BCrypt
-            PasswordHash = "$2a$11$mC/7D3bV7KzS6gM7rMhRre7VbLmWXv8A1O5JmWqE2qE5i6z3c2q1G", 
-            UserGroup = "admin"
-        });
-    }
+    
+    modelBuilder.Entity<Users>(entity =>
+    {
+        entity.HasKey(e => e.Id);
+        
+        entity.Property(e => e.Username)
+            .IsRequired()
+            .HasMaxLength(50);
+            
+        entity.Property(e => e.Email)
+            .IsRequired()
+            .HasMaxLength(150);
+
+        
+        entity.HasIndex(e => e.Username).IsUnique();
+        entity.HasIndex(e => e.Email).IsUnique();
+    });
+
+    // Temporary Admin Test User (pass: admin123)
+    modelBuilder.Entity<Users>().HasData(new Users
+    {
+        Id = Guid.Parse("a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"),
+        Username = "admin",
+        Email = "admin@fluxmonitor.com",
+        PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"), 
+        UserGroup = "admin",
+        IsActive = true,
+        CreatedAt = DateTime.UtcNow 
+    });
+}
 }
