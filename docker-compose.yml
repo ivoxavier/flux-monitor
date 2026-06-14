@@ -77,6 +77,7 @@ services:
       - Jwt__Key=${JWT_SECRET_KEY}
       - Jwt__Issuer=FluxMonitorApi
       - Jwt__Audience=FluxMonitorFrontend
+      - Cors__AllowedOrigins=${FRONTEND_URL}
 
 
       # CONNECTION STRINGS CONFIGURATION (Uses the variables mapped in your .env.local):

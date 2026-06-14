@@ -38,7 +38,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 // --- DESIGN-TIME (MIGRATIONS) ---
 if (string.IsNullOrEmpty(connectionString) && EF.IsDesignTime)
 {
-    // Uma string fictícia apenas para o compilador do EF passar sem chiar
+    // fake connectionString to bypass
     connectionString = "Server=localhost;Database=fluxmonitor_db;Uid=root;Pwd=root;";
 }
 
@@ -56,8 +56,20 @@ builder.Services.AddDbContext<FluxMonitorDbContext>(options =>
 
 builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 
-builder.Services.AddCors(options => options.AddDefaultPolicy(policy => 
-    policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
+
+var allowedOrigins = builder.Configuration["Cors:AllowedOrigins"] 
+                     ?? Environment.GetEnvironmentVariable("Cors__AllowedOrigins") 
+                     ?? "http://localhost:3000";
+
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
 
 builder.Services.AddEndpointsApiExplorer();
