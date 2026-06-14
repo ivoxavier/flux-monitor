@@ -12,6 +12,7 @@ public class FluxMonitorDbContext : DbContext
     public DbSet<Users> Users { get; set; }
     public DbSet<SystemSettings> SystemSettings { get; set; }
     public DbSet<Manifest> Manifests { get; set; }
+    public DbSet<Alert> Alerts { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
