@@ -247,6 +247,62 @@ export const locales = {
       successResolve: "Alerta resolvido com sucesso.",
       successReopen: "Alerta reaberto com sucesso.",
     }
+  },
+  dashboardPage: {
+    title: "Painel de Controlo Operacional",
+    subtitle: "Visualizando dados operacionais do dia",
+    filterDay: "Filtrar por Dia",
+    stats: {
+      executedToday: "Fluxos Executados Hoje",
+      processedFiles: "Ficheiros Processados",
+      httpSent: "Pedidos HTTP Enviados",
+      httpReceived: "Pedidos HTTP Recebidos",
+      flowsError: "Fluxos com Erro",
+      activeAlerts: "Alertas Ativos",
+    },
+    charts: {
+      hourlyTrend: "Evolução dos Fluxos por Hora",
+      dailyProcessing: "Processamento de Ficheiros por Dia",
+      errorDistribution: "Distribuição de Erros por Tipo",
+      quickFilters: "Filtros Rápidos",
+      quickFiltersDesc: "Utilize os filtros acima para refinar a pesquisa rápida nos gráficos.",
+    },
+    tableTitle: "Fluxos Recentes",
+    placeholders: {
+      status: "Estado",
+      system: "Sistema",
+      flowType: "Tipo de Fluxo",
+      all: "Todos",
+    },
+    status: {
+      success: "Sucesso",
+      warning: "Aviso",
+      error: "Erro",
+    },
+    sla: {
+      fulfilled: "Cumprido",
+      notFulfilled: "Não Cumprido",
+    },
+    table: {
+      flowName: "Nome do Fluxo",
+      holding: "Holding",
+      department: "Departamento",
+      client: "Cliente",
+      section: "Secção",
+      filesReceived:"Ficheiros Recebidos",
+      filesProcessed: "Ficheiro Processados",
+      httpSent:"Pedidos HTTP Enviados",
+      httpReceived: "Pedidos HTTP Recebidos",
+      sourceSystem: "Sistema Origem",
+      targetSystem: "Sistema Destino",
+      lastExecution: "Última Execução",
+      time: "Tempo",
+      status: "Estado",
+      sla: "SLA",
+    },
+    messages: {
+      errLoad: "Erro ao carregar dados operacionais do Dashboard.",
+    }
   }
   },
   en: {

@@ -3,6 +3,7 @@ using System;
 using FluxMonitor.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FluxMonitor.Infrastructure.Migrations
 {
     [DbContext(typeof(FluxMonitorDbContext))]
-    partial class FluxMonitorDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260614220748_AddOrganizationalMetadataToExecutions")]
+    partial class AddOrganizationalMetadataToExecutions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -163,10 +166,6 @@ namespace FluxMonitor.Infrastructure.Migrations
                     b.Property<string>("DirectoryOut")
                         .HasColumnType("longtext");
 
-                    b.Property<string>("ExecutionType")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
                     b.Property<string>("ExpectedFrequency")
                         .IsRequired()
                         .HasColumnType("longtext");
@@ -304,10 +303,10 @@ namespace FluxMonitor.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"),
-                            CreatedAt = new DateTime(2026, 6, 14, 22, 59, 50, 535, DateTimeKind.Utc).AddTicks(9880),
+                            CreatedAt = new DateTime(2026, 6, 14, 22, 7, 46, 689, DateTimeKind.Utc).AddTicks(4750),
                             Email = "admin@fluxmonitor.com",
                             IsActive = true,
-                            PasswordHash = "$2a$11$2GrUmRa9XBohk2cWqwyaYOt3G2EoIWCoIZLS.ZPFtoXSd0JK2m9rO",
+                            PasswordHash = "$2a$11$0G3y6B3MLQdUdhfNSJV3l.Y4MMeIrEboYrerAmIT.CVz0x3tqpE/C",
                             UserGroup = "admin",
                             Username = "admin"
                         });

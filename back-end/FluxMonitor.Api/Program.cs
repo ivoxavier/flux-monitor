@@ -125,6 +125,7 @@ app.MapAuthEndpoints();
 app.MapSettingsEndpoints();
 app.MapUserEndpoints();
 app.MapManifestEndpoints();
-
+app.MapAlertEndpoints();
+app.MapExecutionEndpoints();
 
 app.Run();

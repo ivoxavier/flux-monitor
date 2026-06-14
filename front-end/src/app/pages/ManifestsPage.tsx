@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, Table, Tag, Button, Space, Upload, Modal, Form, Input, Select, Popconfirm, message, theme, Row, Col, Typography } from 'antd';
-import { UploadOutlined, PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, FileTextOutlined, FileExcelOutlined, FilePdfOutlined, SearchOutlined, CloseOutlined, MailOutlined, BellOutlined, FolderOpenOutlined, DesktopOutlined, DownloadOutlined } from '@ant-design/icons';
+import { UploadOutlined, PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, FileTextOutlined, FileExcelOutlined, FilePdfOutlined, SearchOutlined, CloseOutlined, MailOutlined, BellOutlined, FolderOpenOutlined, DesktopOutlined, DownloadOutlined, KeyOutlined, ClockCircleOutlined, ControlOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
 import { getTranslation } from '../../config/i18n';
 
@@ -34,7 +34,7 @@ export default function ManifestsPage() {
       setManifestos(data);
     } catch (err: any) {
       message.error(err.message || t.messages.errLoadList);
-    } finally {
+    } finally { 
       setLoading(false);
     }
   }, [baseUrl, searchText, t.messages.errLoadList]);
@@ -43,14 +43,14 @@ export default function ManifestsPage() {
     carregarManifestos();
   }, [carregarManifestos]);
 
-  
   const downloadTemplateJson = () => {
     const template = {
       name: "File Import Process Manifest",
       flow: "File Import Workflow",
       fileType: "XML",
       status: "enabled",
-      frequency: "15 min",
+      executionType: "Recurrent",
+      frequency: "6 min",
       maxExecutionTime: "5 min",
       fileClass: "Invoices",
       systemType: "Talend",
@@ -107,6 +107,7 @@ export default function ManifestsPage() {
       estado: record.status,
       configAlertas: record.alertChannels,
       destinatarios: record.recipients,
+      tipoExecucao: record.executionType || 'Recurrent',
       frequencia: record.frequency,
       tempoMaximo: record.maxExecutionTime,
       classeFicheiro: record.fileClass,
@@ -145,6 +146,7 @@ export default function ManifestsPage() {
           status: values.estado,
           alertChannels: values.configAlertas || [],
           recipients: values.destinatarios || [],
+          executionType: values.tipoExecucao,
           frequency: values.frequencia,
           maxExecutionTime: values.tempoMaximo,
           fileClass: values.classeFicheiro,
@@ -228,13 +230,7 @@ export default function ManifestsPage() {
             style={cardElevationStyle}
             extra={
               <Space size="middle">
-                {/* 🟢 ADICIONADO O BOTÃO DE DOWNLOAD CONFORME SOLICITADO */}
-                <Button 
-                  type="link" 
-                  icon={<DownloadOutlined />} 
-                  onClick={downloadTemplateJson}
-                  style={{ fontSize: '13px' }}
-                >
+                <Button type="link" icon={<DownloadOutlined />} onClick={downloadTemplateJson} style={{ fontSize: '13px' }}>
                   {t.modal.downloadTemplate}
                 </Button>
                 <Upload {...uploadProps} showUploadList={false}>
@@ -261,6 +257,16 @@ export default function ManifestsPage() {
               extra={<Button type="text" icon={<CloseOutlined />} onClick={() => { setShowDetailPanel(false); setSelectedManifest(null); }} />}
             >
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                
+                <div style={{ background: token.colorWarningBg, padding: '10px 12px', borderRadius: token.borderRadiusLG, border: `1px dashed ${token.colorWarningBorder}` }}>
+                  <span style={{ color: token.colorWarningTextActive, display: 'block', fontSize: '11px', fontWeight: 600, letterSpacing: '0.5px' }}>
+                    <KeyOutlined /> MANIFEST ID (GUID)
+                  </span>
+                  <Text copyable style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 'bold', color: token.colorText }}>
+                    {selectedManifest.key}
+                  </Text>
+                </div>
+
                 <div>
                   <span style={{ color: token.colorTextDescription, display: 'block', fontSize: '12px' }}>{t.labels.fileName}</span>
                   <strong style={{ fontSize: '16px', color: token.colorTextHeading }}>{selectedManifest.name}</strong>
@@ -276,6 +282,27 @@ export default function ManifestsPage() {
                     <Tag color={selectedManifest.status === 'enabled' ? 'success' : 'default'} style={{ marginTop: 2 }}>{selectedManifest.status === 'enabled' ? 'ATIVO' : 'INATIVO'}</Tag>
                   </Col>
                 </Row>
+
+                <div style={{ borderTop: `1px solid ${token.colorBorderSecondary}`, paddingTop: '12px' }}>
+                  <Row gutter={[16, 14]}>
+                    <Col span={12}>
+                      <span style={{ color: token.colorTextDescription, display: 'block', fontSize: '12px' }}><ControlOutlined /> Tipo Execução</span>
+                      <Tag color={selectedManifest.executionType === 'Single' ? 'purple' : 'blue'} style={{ fontWeight: 600, marginTop: 2 }}>
+                        {selectedManifest.executionType === 'Single' ? 'EXECUÇÃO ÚNICA' : 'RECORRENTE / LOOP'}
+                      </Tag>
+                    </Col>
+                    <Col span={12}>
+                      <span style={{ color: token.colorTextDescription, display: 'block', fontSize: '12px' }}><ClockCircleOutlined /> Frequência Alvo</span>
+                      <span style={{ color: token.colorText, fontWeight: 600, display: 'block', marginTop: 2 }}>{selectedManifest.frequency || 'N/A'}</span>
+                    </Col>
+                  </Row>
+                  <Row gutter={[16, 14]} style={{ marginTop: 10 }}>
+                    <Col span={12}>
+                      <span style={{ color: token.colorTextDescription, display: 'block', fontSize: '12px' }}><ClockCircleOutlined /> Janela SLA Máxima</span>
+                      <span style={{ color: token.colorText, fontWeight: 600 }}>{selectedManifest.maxExecutionTime || 'N/A'}</span>
+                    </Col>
+                  </Row>
+                </div>
 
                 <div style={{ borderTop: `1px solid ${token.colorBorderSecondary}`, paddingTop: '12px' }}>
                   <span style={{ color: token.colorTextDescription, display: 'block', fontSize: '12px', marginBottom: 6 }}><BellOutlined /> {t.labels.alertChannels}</span>
@@ -344,9 +371,8 @@ export default function ManifestsPage() {
         okText={t.yes}
         cancelText={t.no}
       >
-        <Form form={form} layout="vertical" initialValues={{ estado: 'enabled', tipo: 'XML', tipoSistema: 'Talend' }}>
+        <Form form={form} layout="vertical" initialValues={{ estado: 'enabled', tipo: 'XML', tipoSistema: 'Talend', tipoExecucao: 'Recurrent' }}>
           
-          {/* SECÇÃO 1: Dados Identificadores */}
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item name="nome" label={t.labels.fileName} rules={[{ required: true, message: t.modal.reqName }]}>
@@ -382,13 +408,35 @@ export default function ManifestsPage() {
 
           <Row gutter={16}>
             <Col span={12}>
+              <Form.Item name="tipoExecucao" label="Tipo de Execução" rules={[{ required: true }]}>
+                <Select placeholder="Como é disparado?">
+                  <Select.Option value="Recurrent">Recorrente (Loop contínuo)</Select.Option>
+                  <Select.Option value="Single">Execução Única (Janela por período)</Select.Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            
+            <Col span={12}>
+              <Form.Item 
+                name="frequencia" 
+                label="Frequência Esperada / Alvo" 
+                rules={[{ required: true, message: t.modal.reqFrequency }]}
+                extra="Exemplo: 1 min, 6 min, daily, weekly, monthly"
+              >
+                <Input placeholder="Ex: 6 min, daily, weekly" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
               <Form.Item name="classeFicheiro" label={t.labels.fileClass}>
                 <Input placeholder="Ex: Faturas, Encomendas, Stocks" />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="frequencia" label={t.labels.frequency} rules={[{ required: true, message: t.modal.reqFrequency }]}>
-                <Input placeholder="Ex: 15 min, 1 hora" />
+              <Form.Item name="tempoMaximo" label={t.labels.maxExecutionTime} rules={[{ required: true, message: t.modal.reqMaxTime }]}>
+                <Input placeholder="Ex: 5 min, 20 min" />
               </Form.Item>
             </Col>
           </Row>
@@ -425,7 +473,6 @@ export default function ManifestsPage() {
             </Form.Item>
           </Card>
 
-          {/* SECÇÃO 3: Políticas de Alerta */}
           <Card title={t.modal.cardAlertTitle} size="small" style={{ marginBottom: 20, background: token.colorFillAlter, border: 'none' }}>
             <Form.Item name="configAlertas" label={t.labels.alertChannels} extra={t.modal.alertExtra}>
               <Select mode="multiple" placeholder={t.modal.placeholderChannels} style={{ width: '100%' }}>
@@ -439,10 +486,6 @@ export default function ManifestsPage() {
               <Select mode="tags" tokenSeparators={[',']} placeholder="exemplo@empresa.com" style={{ width: '100%' }} suffixIcon={<MailOutlined />} />
             </Form.Item>
           </Card>
-
-          <Form.Item name="tempoMaximo" label={t.labels.maxExecutionTime} rules={[{ required: true, message: t.modal.reqMaxTime }]}>
-            <Input placeholder="Ex: 5 min, 20 min" />
-          </Form.Item>
         </Form>
       </Modal>
     </div>

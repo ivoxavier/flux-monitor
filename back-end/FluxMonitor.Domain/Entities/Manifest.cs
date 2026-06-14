@@ -11,21 +11,21 @@ public class Manifest
     
     public string AssociatedFlow { get; set; } = string.Empty;
     
-    public string FileType { get; set; } = string.Empty;
+    public string FileType { get; set; } = string.Empty; // XML, JSON, CSV
     
     public bool IsActive { get; set; }
+
+    public string ExecutionType { get; set; } = "Recurrent";
     
-    public string ExpectedFrequency { get; set; } = string.Empty;
+    public string ExpectedFrequency { get; set; } = string.Empty; 
     
     public string MaxExecutionTime { get; set; } = string.Empty;
-    
     
     public string? FileClass { get; set; }
     public string? DirectoryIn { get; set; }
     public string? DirectoryOut { get; set; }
-    public string? SystemType { get; set; }
+    public string? SystemType { get; set; } // Talend, n8n, C#, etc.
     public string? SchedulerMachine { get; set; }
-    
     
     public List<string> AlertChannels { get; set; } = new();
     

@@ -3,6 +3,7 @@ using System;
 using FluxMonitor.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FluxMonitor.Infrastructure.Migrations
 {
     [DbContext(typeof(FluxMonitorDbContext))]
-    partial class FluxMonitorDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260614214406_AddTelemetryAndAlertsTables")]
+    partial class AddTelemetryAndAlertsTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -73,12 +76,6 @@ namespace FluxMonitor.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<string>("Client")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("Department")
-                        .HasColumnType("longtext");
-
                     b.Property<double>("DurationSeconds")
                         .HasColumnType("double");
 
@@ -89,9 +86,6 @@ namespace FluxMonitor.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("varchar(150)");
-
-                    b.Property<string>("Holding")
-                        .HasColumnType("longtext");
 
                     b.Property<int?>("HttpRequestsReceivedCount")
                         .HasColumnType("int");
@@ -113,12 +107,6 @@ namespace FluxMonitor.Infrastructure.Migrations
                     b.Property<int?>("ReceivedFilesCount")
                         .HasColumnType("int");
 
-                    b.Property<string>("Section")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("SourceSystem")
-                        .HasColumnType("longtext");
-
                     b.Property<DateTime>("StartTime")
                         .HasColumnType("datetime(6)");
 
@@ -131,9 +119,6 @@ namespace FluxMonitor.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("varchar(50)");
-
-                    b.Property<string>("TargetSystem")
-                        .HasColumnType("longtext");
 
                     b.HasKey("Id");
 
@@ -161,10 +146,6 @@ namespace FluxMonitor.Infrastructure.Migrations
                         .HasColumnType("longtext");
 
                     b.Property<string>("DirectoryOut")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("ExecutionType")
-                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("ExpectedFrequency")
@@ -304,10 +285,10 @@ namespace FluxMonitor.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"),
-                            CreatedAt = new DateTime(2026, 6, 14, 22, 59, 50, 535, DateTimeKind.Utc).AddTicks(9880),
+                            CreatedAt = new DateTime(2026, 6, 14, 21, 44, 5, 180, DateTimeKind.Utc).AddTicks(3370),
                             Email = "admin@fluxmonitor.com",
                             IsActive = true,
-                            PasswordHash = "$2a$11$2GrUmRa9XBohk2cWqwyaYOt3G2EoIWCoIZLS.ZPFtoXSd0JK2m9rO",
+                            PasswordHash = "$2a$11$5NeyS7YQ4MurvQyw0Tp/J.uGIl3NMdcQ1rVnyuLWllALnZPGtjloy",
                             UserGroup = "admin",
                             Username = "admin"
                         });

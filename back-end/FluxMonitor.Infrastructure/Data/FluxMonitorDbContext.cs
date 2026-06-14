@@ -1,7 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using BCrypt.Net;
 using FluxMonitor.Domain.Entities;
-
 
 namespace FluxMonitor.Infrastructure.Data;
 
@@ -13,25 +16,19 @@ public class FluxMonitorDbContext : DbContext
     public DbSet<SystemSettings> SystemSettings { get; set; }
     public DbSet<Manifest> Manifests { get; set; }
     public DbSet<Alert> Alerts { get; set; }
+    public DbSet<Execution> Executions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-    
+
         modelBuilder.Entity<Users>(entity =>
         {
             entity.HasKey(e => e.Id);
-        
-            entity.Property(e => e.Username)
-                .IsRequired()
-                .HasMaxLength(50);
-            
-            entity.Property(e => e.Email)
-                .IsRequired()
-                .HasMaxLength(150);
+            entity.Property(e => e.Username).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Email).IsRequired().HasMaxLength(150);
 
-        
             entity.HasIndex(e => e.Username).IsUnique();
             entity.HasIndex(e => e.Email).IsUnique();
         });
@@ -48,6 +45,7 @@ public class FluxMonitorDbContext : DbContext
             CreatedAt = DateTime.UtcNow 
         });
 
+        // --- SYSTEM SETTINGS CONFIG ---
         modelBuilder.Entity<SystemSettings>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -67,36 +65,80 @@ public class FluxMonitorDbContext : DbContext
             ManifestsRetentionDays = 90
         });
 
+        
         modelBuilder.Entity<Manifest>(entity =>
-{
-    entity.HasKey(e => e.Id);
-    entity.Property(e => e.Name).IsRequired().HasMaxLength(150);
-    entity.Property(e => e.AssociatedFlow).IsRequired().HasMaxLength(150);
-    entity.Property(e => e.FileType).IsRequired().HasMaxLength(10);
-    
-    
-    var alertComparer = new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<List<string>>(
-        (c1, c2) => c1!.SequenceEqual(c2!),
-        c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
-        c => c.ToList());
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(150);
+            entity.Property(e => e.AssociatedFlow).IsRequired().HasMaxLength(150);
+            entity.Property(e => e.FileType).IsRequired().HasMaxLength(10);
+            
+            var alertComparer = new ValueComparer<List<string>>(
+                (c1, c2) => c1!.SequenceEqual(c2!),
+                c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                c => c.ToList());
 
-    entity.Property(e => e.AlertChannels)
-        .HasConversion(
-            v => string.Join(',', v),
-            v => v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList())
-        .Metadata.SetValueComparer(alertComparer);
+            entity.Property(e => e.AlertChannels)
+                .HasConversion(
+                    v => string.Join(',', v),
+                    v => v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList())
+                .Metadata.SetValueComparer(alertComparer);
 
-    
-            var recipientsComparer = new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<List<string>>(
+            var recipientsComparer = new ValueComparer<List<string>>(
                 (c1, c2) => c1!.SequenceEqual(c2!),
                 c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
                 c => c.ToList());
 
             entity.Property(e => e.Recipients)
                 .HasConversion(
-                v => string.Join(',', v),
-                v => v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList())
-            .Metadata.SetValueComparer(recipientsComparer);
+                    v => string.Join(',', v),
+                    v => v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList())
+                .Metadata.SetValueComparer(recipientsComparer);
+        });
+
+        
+        modelBuilder.Entity<Alert>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.FlowName).IsRequired().HasMaxLength(150);
+            entity.Property(e => e.AlertType).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Severity).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.Status).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.Description).HasMaxLength(500);
+
+          
+            var actionsComparer = new ValueComparer<List<string>>(
+                (c1, c2) => c1!.SequenceEqual(c2!),
+                c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                c => c.ToList());
+
+            entity.Property(e => e.TriggeredAutomatedActions)
+                .HasConversion(
+                    v => string.Join(',', v),
+                    v => v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList())
+                .Metadata.SetValueComparer(actionsComparer);
+
+            
+            entity.HasOne(e => e.Manifest)
+                .WithMany()
+                .HasForeignKey(e => e.ManifestId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        
+        modelBuilder.Entity<Execution>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ManifestName).IsRequired().HasMaxLength(150);
+            entity.Property(e => e.FlowName).IsRequired().HasMaxLength(150);
+            entity.Property(e => e.Status).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.SystemType).HasMaxLength(50);
+
+            
+            entity.HasOne(e => e.Manifest)
+                .WithMany()
+                .HasForeignKey(e => e.ManifestId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
