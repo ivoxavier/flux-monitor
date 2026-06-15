@@ -96,9 +96,6 @@ export default function LoginPage() {
             }}>
               {BRAND_CONFIG.logoText}
             </span>
-            <Text type="secondary" style={{ fontSize: '13px', fontWeight: 500 }}>
-              {BRAND_CONFIG.clientCompany}
-            </Text>
           </div>
         </div>
 
@@ -125,7 +122,7 @@ export default function LoginPage() {
             />
           </Form.Item>
 
-          {/* 🟢 Usa a password e o "esqueceu-se" centralizados */}
+          {}
           <Form.Item
             label={
               <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>

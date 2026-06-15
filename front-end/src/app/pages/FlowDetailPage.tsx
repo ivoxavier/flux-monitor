@@ -1,124 +1,108 @@
-import { Card, Descriptions, Table, Tag, Tabs, Badge, Progress, Space, Statistic, Row, Col, theme } from 'antd';
-import { CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined, SyncOutlined, LineChartOutlined } from '@ant-design/icons';
+import { useState, useEffect, useCallback } from 'react';
+import { Card, Descriptions, Table, Tag, Tabs, Badge, Progress, Space, Statistic, Row, Col, theme, Spin, message, Button } from 'antd';
+import { CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined, SyncOutlined, LineChartOutlined, FileTextOutlined } from '@ant-design/icons';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useParams } from 'react-router-dom';
 
 export default function FlowDetailPage() {
-  const { id } = useParams();
-  
-  // Aceder aos tokens globais de estilo
+  const { id } = useParams<{ id: string }>();
   const { token } = theme.useToken();
 
-  // Estilo reutilizável para a elevação moderna dos cards
+  const [loading, setLoading] = useState(true);
+  const [flowData, setFlowData] = useState<any>(null);
+  const [history, setHistory] = useState<any[]>([]);
+  const [selectedExecutionLogs, setSelectedExecutionLogs] = useState<string>("Select an execution from the history table to inspect its runtime stack trace logs.");
+
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
   const cardElevationStyle = {
     boxShadow: token.boxShadowSecondary,
     borderRadius: token.borderRadiusLG,
     border: 'none',
   };
 
-  const flowData = {
-    nome: 'Importação Faturas SAP',
-    origem: 'SAP ERP',
-    destino: 'Sistema Financeiro',
-    tipoEDI: 'EDIFACT INVOIC',
-    slaDefined: '5 minutos',
-    ultimaExecucao: '2026-06-07 14:23:15',
-    proximaExecucao: '2026-06-07 14:38:15',
-    estado: 'sucesso',
-    frequencia: '15 minutos',
-    tempoMedio: '2.8s',
-    taxaSucesso: 94.5,
-  };
 
-  const historico = [
-    {
-      key: '1',
-      dataHora: '2026-06-07 14:23:15',
-      estado: 'sucesso',
-      duracao: '2.3s',
-      ficheirosProcessados: 45,
-    },
-    {
-      key: '2',
-      dataHora: '2026-06-07 14:08:10',
-      estado: 'sucesso',
-      duracao: '2.5s',
-      ficheirosProcessados: 38,
-    },
-    {
-      key: '3',
-      dataHora: '2026-06-07 13:53:05',
-      estado: 'aviso',
-      duracao: '4.8s',
-      ficheirosProcessados: 52,
-    },
-    {
-      key: '4',
-      dataHora: '2026-06-07 13:38:00',
-      estado: 'erro',
-      duracao: '18.2s',
-      ficheirosProcessados: 0,
-    },
-    {
-      key: '5',
-      dataHora: '2026-06-07 13:23:15',
-      estado: 'sucesso',
-      duracao: '2.1s',
-      ficheirosProcessados: 41,
-    },
-  ];
+  const loadPipelineDetails = useCallback(async () => {
+    setLoading(true);
+    try {
+      const resDetail = await fetch(`${baseUrl}/api/manifests/${id}/detail`);
+      if (!resDetail.ok) throw new Error("Could not retrieve pipeline configuration parameters.");
+      const dataDetail = await resDetail.json();
+      setFlowData(dataDetail);
 
-  const performanceData = [
-    { hora: '00:00', duracao: 2.1, ficheiros: 35 },
-    { hora: '03:00', duracao: 2.3, ficheiros: 28 },
-    { hora: '06:00', duracao: 2.5, ficheiros: 42 },
-    { hora: '09:00', duracao: 3.2, ficheiros: 58 },
-    { hora: '12:00', duracao: 2.8, ficheiros: 65 },
-    { hora: '15:00', duracao: 2.4, ficheiros: 52 },
-  ];
+      const resHistory = await fetch(`${baseUrl}/api/manifests/${id}/execution-history`);
+      if (!resHistory.ok) throw new Error("Could not retrieve pipeline execution runtime logs.");
+      const dataHistory = await resHistory.json();
+      setHistory(dataHistory);
 
-  const logs = `[2026-06-07 14:23:10] INFO: Iniciando fluxo de importação
-[2026-06-07 14:23:11] INFO: Conectando ao SAP ERP
-[2026-06-07 14:23:12] INFO: Autenticação bem-sucedida
-[2026-06-07 14:23:12] INFO: Obtendo faturas do período
-[2026-06-07 14:23:13] INFO: 45 faturas encontradas
-[2026-06-07 14:23:13] INFO: Validando formato EDIFACT
-[2026-06-07 14:23:14] INFO: Convertendo dados para formato interno
-[2026-06-07 14:23:14] INFO: Enviando para Sistema Financeiro
-[2026-06-07 14:23:15] INFO: Processamento concluído com sucesso
-[2026-06-07 14:23:15] INFO: 45 ficheiros processados em 2.3s`;
+
+      if (dataHistory.length > 0) {
+        setSelectedExecutionLogs(dataHistory[0].errorLog || "Execution completed successfully with no exceptions.");
+      }
+    } catch (err: any) {
+      message.error(err.message || "An error occurred while calling the orchestration API data streams.");
+    } finally {
+      setLoading(false);
+    }
+  }, [baseUrl, id]);
+
+  useEffect(() => {
+    loadPipelineDetails();
+  }, [loadPipelineDetails]);
 
   const historicoColumns = [
     {
-      title: 'Data/Hora',
-      dataIndex: 'dataHora',
-      key: 'dataHora',
+      title: 'Execution Timestamp',
+      dataIndex: 'timestamp',
+      key: 'timestamp',
     },
     {
-      title: 'Estado',
-      dataIndex: 'estado',
-      key: 'estado',
-      render: (estado: string) => {
+      title: 'Lifecycle Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => {
         const config = {
-          sucesso: { color: 'success', icon: <CheckCircleOutlined />, text: 'Sucesso' },
-          aviso: { color: 'warning', icon: <ClockCircleOutlined />, text: 'Aviso' },
-          erro: { color: 'error', icon: <CloseCircleOutlined />, text: 'Erro' },
+          success: { color: 'success', icon: <CheckCircleOutlined />, text: 'Success' },
+          running: { color: 'processing', icon: <SyncOutlined spin />, text: 'Running' },
+          failed: { color: 'error', icon: <CloseCircleOutlined />, text: 'Failed' },
         };
-        const { color, icon, text } = config[estado as keyof typeof config];
-        return <Tag color={color} icon={icon}>{text}</Tag>;
+        const mapped = config[status as keyof typeof config] || { color: 'default', icon: <ClockCircleOutlined />, text: status };
+        return <Tag color={mapped.color} icon={mapped.icon}>{mapped.text}</Tag>;
       },
     },
     {
-      title: 'Duração',
-      dataIndex: 'duracao',
-      key: 'duracao',
+      title: 'Duration',
+      dataIndex: 'duration',
+      key: 'duration',
     },
     {
-      title: 'Ficheiros Processados',
-      dataIndex: 'ficheirosProcessados',
-      key: 'ficheirosProcessados',
+      title: 'Processed Files Count',
+      dataIndex: 'processedFiles',
+      key: 'processedFiles',
+    },
+    {
+      title: 'Inspection',
+      key: 'inspect',
+      render: (_: any, record: any) => (
+        <Button 
+          size="small" 
+          icon={<FileTextOutlined />} 
+          onClick={() => setSelectedExecutionLogs(record.errorLog)}
+        >
+          Inspect Logs
+        </Button>
+      ),
     },
   ];
+
+  // Inverte a cronologia do array para renderizar o gráfico do passado em direção ao presente
+  const chartData = [...history]
+    .reverse()
+    .map(h => ({
+      time: h.timestamp.includes(' ') ? h.timestamp.split(' ')[1] : h.timestamp, 
+      duration: h.durationRaw,
+      files: h.processedFiles
+    }));
 
   const tabItems = [
     {
@@ -126,14 +110,14 @@ export default function FlowDetailPage() {
       label: (
         <span>
           <ClockCircleOutlined />
-          Histórico de Execuções
+          Execution History
         </span>
       ),
       children: (
         <Table
           columns={historicoColumns}
-          dataSource={historico}
-          pagination={{ pageSize: 10 }}
+          dataSource={history}
+          pagination={{ pageSize: 5 }}
         />
       ),
     },
@@ -141,15 +125,14 @@ export default function FlowDetailPage() {
       key: 'logs',
       label: (
         <span>
-          <SyncOutlined />
-          Logs
+          <FileTextOutlined />
+          Runtime Diagnostics Log
         </span>
       ),
       children: (
         <Card style={cardElevationStyle}>
           <pre
             style={{
-              // Usa token de cor de preenchimento para mudar de cor no dark mode
               background: token.colorFillAlter, 
               color: token.colorText,
               padding: 16,
@@ -158,10 +141,12 @@ export default function FlowDetailPage() {
               maxHeight: 400,
               fontSize: 12,
               fontFamily: 'monospace',
-              border: `1px solid ${token.colorBorderSecondary}`
+              border: `1px solid ${token.colorBorderSecondary}`,
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-all'
             }}
           >
-            {logs}
+            {selectedExecutionLogs}
           </pre>
         </Card>
       ),
@@ -171,7 +156,7 @@ export default function FlowDetailPage() {
       label: (
         <span>
           <LineChartOutlined />
-          Estatísticas
+          Performance Metrics Analytics
         </span>
       ),
       children: (
@@ -180,8 +165,8 @@ export default function FlowDetailPage() {
             <Col xs={24} md={8}>
               <Card style={cardElevationStyle}>
                 <Statistic
-                  title="Tempo Médio de Execução"
-                  value={flowData.tempoMedio}
+                  title="Average Runtime Duration"
+                  value={flowData?.avgDuration || 'N/A'}
                   prefix={<ClockCircleOutlined />}
                 />
               </Card>
@@ -189,48 +174,48 @@ export default function FlowDetailPage() {
             <Col xs={24} md={8}>
               <Card style={cardElevationStyle}>
                 <Statistic
-                  title="Taxa de Sucesso"
-                  value={flowData.taxaSucesso}
+                  title="Pipeline Success Rate"
+                  value={flowData?.successRate || 0}
                   suffix="%"
-                  valueStyle={{ color: '#3f8600' }}
+                  valueStyle={{ color: token.colorSuccessText }}
                   prefix={<CheckCircleOutlined />}
                 />
-                <Progress percent={flowData.taxaSucesso} strokeColor="#52c41a" />
+                <Progress percent={flowData?.successRate || 0} strokeColor={token.colorSuccess} />
               </Card>
             </Col>
             <Col xs={24} md={8}>
               <Card style={cardElevationStyle}>
                 <Statistic
-                  title="Execuções Hoje"
-                  value={96}
+                  title="Total Executions Today"
+                  value={flowData?.totalExecutionsToday || 0}
                   prefix={<SyncOutlined />}
                 />
               </Card>
             </Col>
           </Row>
-          <Card title="Performance ao Longo do Dia" style={cardElevationStyle}>
+          <Card title="SLA Trend Timeline (Last 30 cycles)" style={cardElevationStyle}>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={performanceData}>
+              <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="hora" />
-                <YAxis yAxisId="left" />
-                <YAxis yAxisId="right" orientation="right" />
+                <XAxis dataKey="time" />
+                <YAxis yAxisId="left" label={{ value: 'Duration (s)', angle: -90, position: 'insideLeft' }} />
+                <YAxis yAxisId="right" orientation="right" label={{ value: 'Files Count', angle: 90, position: 'insideRight' }} />
                 <Tooltip />
                 <Legend />
                 <Line
                   yAxisId="left"
                   type="monotone"
-                  dataKey="duracao"
-                  stroke="#1890ff"
-                  name="Duração (s)"
+                  dataKey="duration"
+                  stroke={token.colorPrimary}
+                  name="Duration (Seconds)"
                   strokeWidth={2}
                 />
                 <Line
                   yAxisId="right"
                   type="monotone"
-                  dataKey="ficheiros"
-                  stroke="#52c41a"
-                  name="Ficheiros"
+                  dataKey="files"
+                  stroke={token.colorSuccess}
+                  name="Processed File Volumetrics"
                   strokeWidth={2}
                 />
               </LineChart>
@@ -241,6 +226,16 @@ export default function FlowDetailPage() {
     },
   ];
 
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center', padding: '50px', marginTop: '10%' }}>
+        <Spin size="large" tip="Mapping pipeline database orchestration streams..." />
+      </div>
+    );
+  }
+
+  const isOperational = flowData?.status === 'operational';
+
   return (
     <div>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
@@ -249,35 +244,35 @@ export default function FlowDetailPage() {
           style={cardElevationStyle}
           title={
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span>{flowData.nome}</span>
+              <span style={{ fontSize: '18px', fontWeight: 600 }}>{flowData?.name}</span>
               <Badge
-                status={flowData.estado === 'sucesso' ? 'success' : 'error'}
-                text={flowData.estado === 'sucesso' ? 'Operacional' : 'Com Problemas'}
+                status={isOperational ? 'success' : 'error'}
+                text={isOperational ? 'Operational Cluster' : 'Service Disrupted'}
               />
             </div>
           }
         >
-          <Descriptions bordered column={2}>
-            <Descriptions.Item label="Sistema Origem">{flowData.origem}</Descriptions.Item>
-            <Descriptions.Item label="Sistema Destino">{flowData.destino}</Descriptions.Item>
-            <Descriptions.Item label="Tipo EDI">{flowData.tipoEDI}</Descriptions.Item>
-            <Descriptions.Item label="Frequência">{flowData.frequencia}</Descriptions.Item>
-            <Descriptions.Item label="SLA Definido">{flowData.slaDefined}</Descriptions.Item>
-            <Descriptions.Item label="Tempo Médio">{flowData.tempoMedio}</Descriptions.Item>
-            <Descriptions.Item label="Última Execução">
+          <Descriptions bordered column={2} size="small">
+            <Descriptions.Item label="Source Integration System">{flowData?.source}</Descriptions.Item>
+            <Descriptions.Item label="Destination Target Subsystem">{flowData?.destination}</Descriptions.Item>
+            <Descriptions.Item label="EDI Context / File Spec Type">{flowData?.ediType}</Descriptions.Item>
+            <Descriptions.Item label="Target Calendar Frequency">{flowData?.frequency}</Descriptions.Item>
+            <Descriptions.Item label="Configured SLA Threshold Bounds">{flowData?.slaDefined}</Descriptions.Item>
+            <Descriptions.Item label="Calculated Historical Mean Time">{flowData?.avgDuration}</Descriptions.Item>
+            <Descriptions.Item label="Last Integration Heartbeat">
               <Tag color="success" icon={<CheckCircleOutlined />}>
-                {flowData.ultimaExecucao}
+                {flowData?.lastExecutionTime}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Próxima Execução">
+            <Descriptions.Item label="Next Expected Heartbeat Run">
               <Tag color="processing" icon={<ClockCircleOutlined />}>
-                {flowData.proximaExecucao}
+                {flowData?.nextExecutionTime}
               </Tag>
             </Descriptions.Item>
           </Descriptions>
         </Card>
 
-        {/* Card do Contentor das Tabs */}
+        {}
         <Card style={cardElevationStyle}>
           <Tabs items={tabItems} defaultActiveKey="historico" />
         </Card>

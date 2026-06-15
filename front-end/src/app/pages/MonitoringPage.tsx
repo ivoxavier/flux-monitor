@@ -1,14 +1,21 @@
-import { useState } from 'react';
-import { Card, Table, Tag, Button, Space, Select, Badge, Descriptions, Modal, Timeline, theme, Tooltip } from 'antd';
+import { useState, useEffect, useCallback } from 'react';
+import { Card, Table, Tag, Button, Space, Select, Badge, Descriptions, Modal, Timeline, theme, message } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, WarningOutlined, HistoryOutlined, ReloadOutlined, RobotOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 
 export default function MonitoringPage() {
   const navigate = useNavigate();
+  const [alerts, setAlerts] = useState<any[]>([]); // 🟢 Estado real da API
+  const [loading, setLoading] = useState(false);
   const [selectedAlert, setSelectedAlert] = useState<any>(null);
   const [historyModalVisible, setHistoryModalVisible] = useState(false);
+  
+  // Filtros sincronizados com os parâmetros da tua API C#
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterSeverity, setFilterSeverity] = useState('all');
 
   const { token } = theme.useToken();
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
   const cardElevationStyle = {
     boxShadow: token.boxShadowSecondary,
@@ -16,84 +23,47 @@ export default function MonitoringPage() {
     border: 'none',
   };
 
-  // Mock de dados atualizado com o registo de ações automáticas disparadas pelo motor do sistema
-  const alertas = [
-    {
-      key: '1',
-      fluxo: 'Importação Faturas SAP',
-      tipoAlerta: 'SLA Excedido',
-      dataHora: '2026-06-07 14:15:00',
-      severidade: 'critica',
-      estado: 'ativo',
-      responsavel: 'João Silva',
-      descricao: 'Fluxo excedeu o tempo máximo de execução definido (5 min)',
-      acoesAutomatizadas: ['Email Enviado'], // Lista de ações disparadas
-    },
-    {
-      key: '2',
-      fluxo: 'Sincronização Stock',
-      tipoAlerta: 'Tempo de Resposta Alto',
-      dataHora: '2026-06-07 13:45:30',
-      severidade: 'aviso',
-      estado: 'ativo',
-      responsavel: 'Maria Santos',
-      descricao: 'Tempo de processamento acima do esperado (12.4s vs 8s)',
-      acoesAutomatizadas: [], // Nenhuma ação automática configurada
-    },
-    {
-      key: '3',
-      fluxo: 'Integração CRM',
-      tipoAlerta: 'Falha na Execução',
-      dataHora: '2026-06-07 13:20:15',
-      severidade: 'critica',
-      estado: 'resolvido',
-      responsavel: 'Pedro Costa',
-      descricao: 'Erro de autenticação ao conectar com o Salesforce',
-      acoesAutomatizadas: ['Email Enviado', 'Webhook Teams'], // Múltiplas ações disparadas
-    },
-    {
-      key: '4',
-      fluxo: 'Exportação Encomendas',
-      tipoAlerta: 'Ficheiro não Processado',
-      dataHora: '2026-06-07 12:50:00',
-      severidade: 'aviso',
-      estado: 'ativo',
-      responsavel: 'Ana Oliveira',
-      descricao: '3 ficheiros na fila de espera há mais de 30 minutos',
-      acoesAutomatizadas: ['Webhook Teams'],
-    },
-    {
-      key: '5',
-      fluxo: 'Atualização Clientes',
-      tipoAlerta: 'Frequência não Cumprida',
-      dataHora: '2026-06-07 11:30:00',
-      severidade: 'alta',
-      estado: 'resolvido',
-      responsavel: 'Carlos Ferreira',
-      descricao: 'Fluxo não executou dentro da frequência esperada (2h)',
-      acoesAutomatizadas: ['Email Enviado'],
-    },
-  ];
 
-  const getSeverityColor = (severidade: string) => {
-    const colors = {
-      critica: '#ff4d4f',
-      alta: '#ff7a45',
-      aviso: '#faad14',
-      baixa: '#52c41a',
-    };
-    return colors[severidade as keyof typeof colors] || '#d9d9d9';
+  const loadAlertsData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${baseUrl}/api/alerts?status=${filterStatus}&severity=${filterSeverity}`);
+      if (!response.ok) throw new Error("Failed to download operational alerts from core infrastructure.");
+      const data = await response.json();
+      setAlerts(data);
+    } catch (err: any) {
+      message.error(err.message || "An unexpected network error occurred while polling alerts.");
+    } finally {
+      setLoading(false);
+    }
+  }, [baseUrl, filterStatus, filterSeverity]);
+
+  useEffect(() => {
+    loadAlertsData();
+  }, [loadAlertsData]);
+
+
+  const handleResolveAlert = async (id: string) => {
+    try {
+      const response = await fetch(`${baseUrl}/api/alerts/${id}/resolve`, { method: 'PUT' });
+      if (!response.ok) throw new Error("Could not update target operational alert status.");
+      message.success("Operational incident successfully resolved.");
+      loadAlertsData(); 
+    } catch (err: any) {
+      message.error(err.message);
+    }
   };
 
-  const getSeverityTag = (severidade: string) => {
-    const config = {
-      critica: { color: 'error', text: 'CRÍTICA' },
-      alta: { color: 'error', text: 'ALTA' },
-      aviso: { color: 'warning', text: 'AVISO' },
-      baixa: { color: 'success', text: 'BAIXA' },
-    };
-    const { color, text } = config[severidade as keyof typeof config];
-    return <Tag color={color}>{text}</Tag>;
+
+  const handleReopenAlert = async (id: string) => {
+    try {
+      const response = await fetch(`${baseUrl}/api/alerts/${id}/reopen`, { method: 'PUT' });
+      if (!response.ok) throw new Error("Could not restore alert status back to active state.");
+      message.success("Alert context successfully re-opened for engineering analysis.");
+      loadAlertsData();
+    } catch (err: any) {
+      message.error(err.message);
+    }
   };
 
   const handleViewHistory = (record: any) => {
@@ -101,74 +71,94 @@ export default function MonitoringPage() {
     setHistoryModalVisible(true);
   };
 
+  const getSeverityColor = (severity: string) => {
+    const colors = {
+      critical: '#ff4d4f',
+      high: '#ff7a45',
+      warning: '#faad14',
+      low: '#52c41a',
+    };
+    return colors[severity as keyof typeof colors] || '#d9d9d9';
+  };
+
+  const getSeverityTag = (severity: string) => {
+    const config = {
+      critical: { color: 'error', text: 'CRITICAL' },
+      high: { color: 'error', text: 'HIGH' },
+      warning: { color: 'warning', text: 'WARNING' },
+      low: { color: 'success', text: 'LOW' },
+    };
+    const mapped = config[severity as keyof typeof config] || { color: 'default', text: 'UNKNOWN' };
+    return <Tag color={mapped.color}>{mapped.text}</Tag>;
+  };
+
   const columns = [
     {
       title: '',
-      dataIndex: 'severidade',
+      dataIndex: 'severity',
       key: 'indicator',
       width: 10,
-      render: (severidade: string) => (
+      render: (severity: string) => (
         <div
           style={{
             width: 4,
             height: 40,
-            background: getSeverityColor(severidade),
+            background: getSeverityColor(severity),
             borderRadius: 2,
           }}
         />
       ),
     },
     {
-      title: 'Fluxo',
-      dataIndex: 'fluxo',
-      key: 'fluxo',
+      title: 'Pipeline / Flow context',
+      dataIndex: 'flowName',
+      key: 'flowName',
       render: (text: string, record: any) => (
         <a onClick={() => navigate(`/flow/${record.key}`)}>{text}</a>
       ),
     },
     {
-      title: 'Tipo de Alerta',
-      dataIndex: 'tipoAlerta',
-      key: 'tipoAlerta',
+      title: 'Alert Target Type',
+      dataIndex: 'alertType',
+      key: 'alertType',
     },
     {
-      title: 'Data/Hora',
-      dataIndex: 'dataHora',
-      key: 'dataHora',
+      title: 'Timestamp Trace',
+      dataIndex: 'timestamp',
+      key: 'timestamp',
     },
     {
-      title: 'Severidade',
-      dataIndex: 'severidade',
-      key: 'severidade',
-      render: (severidade: string) => getSeverityTag(severidade),
+      title: 'Severity SLA',
+      dataIndex: 'severity',
+      key: 'severity',
+      render: (severity: string) => getSeverityTag(severity),
     },
     {
-      title: 'Estado',
-      dataIndex: 'estado',
-      key: 'estado',
-      render: (estado: string) => {
-        const config = {
-          ativo: { color: 'error', icon: <WarningOutlined />, text: 'Ativo' },
-          resolvido: { color: 'success', icon: <CheckCircleOutlined />, text: 'Resolvido' },
-        };
-        const { color, icon, text } = config[estado as keyof typeof config];
-        return <Tag color={color} icon={icon}>{text}</Tag>;
+      title: 'Lifecycle Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => {
+        const isCurrent = status.toLowerCase() === 'active';
+        return (
+          <Tag color={isCurrent ? 'error' : 'success'} icon={isCurrent ? <WarningOutlined /> : <CheckCircleOutlined />}>
+            {isCurrent ? 'Active' : 'Resolved'}
+          </Tag>
+        );
       },
     },
-    // COLUNA NOVA: Exibe rapidamente o sumário das ações do robô/sistema na tabela
     {
-      title: 'Ação Automática',
-      dataIndex: 'acoesAutomatizadas',
-      key: 'acoesAutomatizadas',
-      render: (acoes: string[]) => {
-        if (!acoes || acoes.length === 0) {
-          return <Tag color="default">Nenhuma</Tag>;
+      title: 'Triggered Automated Tasks',
+      dataIndex: 'triggeredAutomatedActions',
+      key: 'triggeredAutomatedActions',
+      render: (actions: string[]) => {
+        if (!actions || actions.length === 0) {
+          return <Tag color="default">None</Tag>;
         }
         return (
           <Space size={4} wrap>
-            {acoes.map((acao) => (
-              <Tag key={acao} color="purple" icon={<RobotOutlined />}>
-                {acao}
+            {actions.map((action) => (
+              <Tag key={action} color="purple" icon={<RobotOutlined />}>
+                {action}
               </Tag>
             ))}
           </Space>
@@ -176,53 +166,53 @@ export default function MonitoringPage() {
       },
     },
     {
-      title: 'Responsável',
-      dataIndex: 'responsavel',
-      key: 'responsavel',
-    },
-    {
-      title: 'Ações',
-      key: 'acoes',
-      render: (_: any, record: any) => (
-        <Space>
-          {record.estado === 'ativo' ? (
+      title: 'Actions',
+      key: 'actions',
+      render: (_: any, record: any) => {
+        const isActive = record.status.toLowerCase() === 'active';
+        return (
+          <Space>
+            {isActive ? (
+              <Button
+                type="primary"
+                size="small"
+                icon={<CheckCircleOutlined />}
+                onClick={() => handleResolveAlert(record.key)}
+              >
+                Resolve
+              </Button>
+            ) : (
+              <Button
+                size="small"
+                icon={<ReloadOutlined />}
+                onClick={() => handleReopenAlert(record.key)}
+              >
+                Reopen
+              </Button>
+            )}
             <Button
-              type="primary"
               size="small"
-              icon={<CheckCircleOutlined />}
-              onClick={() => console.log('Resolver:', record.key)}
+              icon={<HistoryOutlined />}
+              onClick={() => handleViewHistory(record)}
             >
-              Resolver
+              Audit Trail
             </Button>
-          ) : (
-            <Button
-              size="small"
-              icon={<ReloadOutlined />}
-              onClick={() => console.log('Reabrir:', record.key)}
-            >
-              Reabrir
-            </Button>
-          )}
-          <Button
-            size="small"
-            icon={<HistoryOutlined />}
-            onClick={() => handleViewHistory(record)}
-          >
-            Histórico
-          </Button>
-        </Space>
-      ),
+          </Space>
+        );
+      },
     },
   ];
 
-  const activeAlertsCount = alertas.filter(a => a.estado === 'ativo').length;
-  const criticalAlertsCount = alertas.filter(a => a.severidade === 'critica' && a.estado === 'ativo').length;
+  // 🟢 CORREÇÃO: Contadores agora calculados a partir dos dados reais mapeados da API
+  const activeAlertsCount = alerts.filter(a => a.status.toLowerCase() === 'active').length;
+  const criticalAlertsCount = alerts.filter(a => a.severity.toLowerCase() === 'critical' && a.status.toLowerCase() === 'active').length;
+  const resolvedCount = alerts.filter(a => a.status.toLowerCase() === 'resolved').length;
 
   return (
     <div>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         
-        {/* Painel de Indicadores */}
+        {/* Real Operational Counter Dashlets */}
         <div style={{ display: 'flex', gap: 16 }}>
           <Card style={{ flex: 1, ...cardElevationStyle }}>
             <Badge count={activeAlertsCount} showZero>
@@ -230,7 +220,7 @@ export default function MonitoringPage() {
             </Badge>
             <div style={{ marginTop: 16 }}>
               <div style={{ fontSize: 24, fontWeight: 'bold' }}>{activeAlertsCount}</div>
-              <div style={{ color: token.colorTextDescription }}>Alertas Ativos</div>
+              <div style={{ color: token.colorTextDescription }}>Active Incidents</div>
             </div>
           </Card>
           <Card style={{ flex: 1, ...cardElevationStyle }}>
@@ -239,55 +229,53 @@ export default function MonitoringPage() {
             </Badge>
             <div style={{ marginTop: 16 }}>
               <div style={{ fontSize: 24, fontWeight: 'bold' }}>{criticalAlertsCount}</div>
-              <div style={{ color: token.colorTextDescription }}>Alertas Críticos</div>
+              <div style={{ color: token.colorTextDescription }}>Critical Breaches</div>
             </div>
           </Card>
           <Card style={{ flex: 1, ...cardElevationStyle }}>
-            <Badge count={alertas.filter(a => a.estado === 'resolvido').length} showZero>
+            <Badge count={resolvedCount} showZero>
               <CheckCircleOutlined style={{ fontSize: 32, color: '#52c41a' }} />
             </Badge>
             <div style={{ marginTop: 16 }}>
-              <div style={{ fontSize: 24, fontWeight: 'bold' }}>
-                {alertas.filter(a => a.estado === 'resolvido').length}
-              </div>
-              <div style={{ color: token.colorTextDescription }}>Resolvidos Hoje</div>
+              <div style={{ fontSize: 24, fontWeight: 'bold' }}>{resolvedCount}</div>
+              <div style={{ color: token.colorTextDescription }}>Resolved Incidents</div>
             </div>
           </Card>
         </div>
 
-        {/* Tabela de Dados */}
+        {}
         <Card
-          title="Monitorização e Alertas"
+          title="Infrastructure Systems Monitoring & Alerts"
           style={cardElevationStyle}
           extra={
             <Space>
-              <Select placeholder="Filtrar por Estado" style={{ width: 150 }}>
-                <Select.Option value="todos">Todos</Select.Option>
-                <Select.Option value="ativo">Ativos</Select.Option>
-                <Select.Option value="resolvido">Resolvidos</Select.Option>
+              <Select value={filterStatus} onChange={setFilterStatus} style={{ width: 150 }}>
+                <Select.Option value="all">All Logs</Select.Option>
+                <Select.Option value="active">Active State Only</Select.Option>
+                <Select.Option value="resolved">Resolved Audits Only</Select.Option>
               </Select>
-              <Select placeholder="Severidade" style={{ width: 150 }}>
-                <Select.Option value="todos">Todos</Select.Option>
-                <Select.Option value="critica">Crítica</Select.Option>
-                <Select.Option value="alta">Alta</Select.Option>
-                <Select.Option value="aviso">Aviso</Select.Option>
-                <Select.Option value="baixa">Baixa</Select.Option>
+              <Select value={filterSeverity} onChange={setFilterSeverity} style={{ width: 150 }}>
+                <Select.Option value="all">All Severities</Select.Option>
+                <Select.Option value="critical">Critical</Select.Option>
+                <Select.Option value="warning">Warning</Select.Option>
+                <Select.Option value="low">Low Priority</Select.Option>
               </Select>
             </Space>
           }
         >
-          <Table columns={columns} dataSource={alertas} pagination={{ pageSize: 10 }} />
+          {/* 🟢 CORREÇÃO: dataSource agora aponta estritamente para o array real 'alerts' e inclui o estado de loading do fetch */}
+          <Table columns={columns} dataSource={alerts} loading={loading} pagination={{ pageSize: 10 }} />
         </Card>
       </Space>
 
-      {/* Painel do Histórico Expandido */}
+      {/* Audit Trail Modal Panel */}
       <Modal
-        title="Histórico e Auditoria do Alerta"
+        title="Incident Historical Verification Logs"
         open={historyModalVisible}
         onCancel={() => setHistoryModalVisible(false)}
         footer={[
           <Button key="close" onClick={() => setHistoryModalVisible(false)}>
-            Fechar
+            Close Inspection View
           </Button>,
         ]}
         width={720}
@@ -295,56 +283,57 @@ export default function MonitoringPage() {
         {selectedAlert && (
           <>
             <Descriptions bordered column={2} size="small" style={{ marginTop: 16 }}>
-              <Descriptions.Item label="Fluxo" span={2}>{selectedAlert.fluxo}</Descriptions.Item>
-              <Descriptions.Item label="Tipo">{selectedAlert.tipoAlerta}</Descriptions.Item>
-              <Descriptions.Item label="Severidade">{getSeverityTag(selectedAlert.severidade)}</Descriptions.Item>
-              <Descriptions.Item label="Data/Hora">{selectedAlert.dataHora}</Descriptions.Item>
-              <Descriptions.Item label="Responsável">{selectedAlert.responsavel}</Descriptions.Item>
+              <Descriptions.Item label="Target Flow" span={2}>{selectedAlert.flowName}</Descriptions.Item>
+              <Descriptions.Item label="Incident Type">{selectedAlert.alertType}</Descriptions.Item>
+              <Descriptions.Item label="Severity Level">{getSeverityTag(selectedAlert.severity)}</Descriptions.Item>
+              <Descriptions.Item label="Timestamp Trace" span={2}>{selectedAlert.timestamp}</Descriptions.Item>
               
-              {/* CAMPO NOVO: Exibe as ações automatizadas no painel descritivo */}
-              <Descriptions.Item label="Ações Autónomas" span={2}>
-                {selectedAlert.acoesAutomatizadas && selectedAlert.acoesAutomatizadas.length > 0 ? (
+              <Descriptions.Item label="Autonomous Systems Executions" span={2}>
+                {selectedAlert.triggeredAutomatedActions && selectedAlert.triggeredAutomatedActions.length > 0 ? (
                   <Space size={4}>
-                    {selectedAlert.acoesAutomatizadas.map((acao: string) => (
-                      <Tag color="purple" icon={<RobotOutlined />} key={acao}>{acao}</Tag>
+                    {selectedAlert.triggeredAutomatedActions.map((action: string) => (
+                      <Tag color="purple" icon={<RobotOutlined />} key={action}>{action}</Tag>
                     ))}
                   </Space>
                 ) : (
-                  <span style={{ color: token.colorTextDescription }}>Nenhuma ação automática disparada</span>
+                  <span style={{ color: token.colorTextDescription }}>No automated webhook actions triggered for this incident context.</span>
                 )}
               </Descriptions.Item>
 
-              <Descriptions.Item label="Descrição" span={2}>{selectedAlert.descricao}</Descriptions.Item>
+              <Descriptions.Item label="Exception / Failure Stack Trace Log" span={2}>
+                <pre style={{ 
+                  margin: 0, padding: '8px', background: token.colorFillAlter, 
+                  borderRadius: token.borderRadiusSM, fontFamily: 'monospace', fontSize: '12px',
+                  whiteSpace: 'pre-wrap', wordBreak: 'break-all'
+                }}>
+                  {selectedAlert.description}
+                </pre>
+              </Descriptions.Item>
             </Descriptions>
 
             <div style={{ marginTop: 24 }}>
-              <h4>Timeline de Eventos de Infraestrutura</h4>
+              <h4>Infrastructure Automation Timeline</h4>
               <Timeline
                 items={[
                   {
                     color: 'red',
-                    children: `${selectedAlert.dataHora} - Alerta gerado automaticamente pelo motor FluxMonitor.`,
+                    children: `${selectedAlert.timestamp} - Automated core validation routine triggered an incident event entry.`,
                   },
-                  // ITEM DINÂMICO NA TIMELINE: Mostra o histórico detalhado da execução do robô
-                  ...(selectedAlert.acoesAutomatizadas && selectedAlert.acoesAutomatizadas.length > 0
-                    ? selectedAlert.acoesAutomatizadas.map((acao: string) => ({
+                  ...(selectedAlert.triggeredAutomatedActions && selectedAlert.triggeredAutomatedActions.length > 0
+                    ? selectedAlert.triggeredAutomatedActions.map((action: string) => ({
                         color: 'purple',
-                        children: `${selectedAlert.dataHora} - Ação automática executada com sucesso: [${acao}].`,
+                        children: `${selectedAlert.timestamp} - Dispatched integration script notification callback successfully: [${action}].`,
                       }))
                     : [])
                   ,
                   {
-                    color: 'blue',
-                    children: `${selectedAlert.dataHora} - Incidente atribuído ao operador ${selectedAlert.responsavel} para triagem manual.`,
-                  },
-                  {
                     color: 'gray',
-                    children: `${selectedAlert.dataHora} - Logs sob análise técnica.`,
+                    children: `${selectedAlert.timestamp} - Raw stack trace logs exported into verification storage node context.`,
                   },
-                  ...(selectedAlert.estado === 'resolvido'
+                  ...(selectedAlert.status.toLowerCase() === 'resolved'
                     ? [{
                         color: 'green',
-                        children: `${selectedAlert.dataHora} - Marcado como resolvido. Fluxo normalizado.`,
+                        children: `${selectedAlert.timestamp} - Operational state flagged as resolved. Core channel telemetry flow recovered.`,
                       }]
                     : []),
                 ]}

@@ -25,6 +25,8 @@ public static class ManifestEndpoints
         group.MapPut("/{id:guid}", UpdateManifestAsync);
         group.MapDelete("/{id:guid}", DeleteManifestAsync);
         group.MapPost("/upload", UploadManifestAsync).DisableAntiforgery();
+        group.MapGet("/{id:guid}/detail", GetFlowDetailAsync);
+        group.MapGet("/{id:guid}/execution-history", GetFlowExecutionHistoryAsync);
     }
 
     private static async Task<IResult> GetManifestsAsync(string? name, string? status, FluxMonitorDbContext db)
@@ -192,4 +194,68 @@ public static class ManifestEndpoints
             return Results.Problem($"An internal error occurred while processing the manifest: {ex.Message}");
         }
     }
+
+    private static async Task<IResult> GetFlowDetailAsync(Guid id, FluxMonitorDbContext db)
+{
+    var manifest = await db.Manifests.FindAsync(id);
+    if (manifest == null) return Results.NotFound("Manifest/Flow not found.");
+
+    // Calcular métricas agregadas com base nas execuções reais
+    var executionsQuery = db.Executions.Where(e => e.ManifestId == id);
+    
+    int totalExecutionsToday = await executionsQuery
+        .Where(e => e.StartTime >= DateTime.UtcNow.Date)
+        .CountAsync();
+
+    double avgDuration = await executionsQuery
+        .Where(e => e.Status == "success")
+        .Select(e => e.DurationSeconds)
+        .DefaultIfEmpty(0)
+        .AverageAsync();
+
+    int totalSuccess = await executionsQuery.CountAsync(e => e.Status == "success");
+    int totalCount = await executionsQuery.CountAsync();
+    double successRate = totalCount > 0 ? ((double)totalSuccess / totalCount) * 100 : 100;
+
+    var lastExecution = await executionsQuery
+        .OrderByDescending(e => e.StartTime)
+        .FirstOrDefaultAsync();
+
+    return Results.Ok(new
+    {
+      Name = manifest.Name,
+      Source = manifest.SystemType ?? "N/A",
+      Destination = "Target System", // Podes mapear para uma coluna real se a tiveres
+      EdiType = manifest.FileType,
+      Frequency = manifest.ExpectedFrequency,
+      SlaDefined = manifest.MaxExecutionTime,
+      AvgDuration = $"{Math.Round(avgDuration, 2)}s",
+      SuccessRate = Math.Round(successRate, 1),
+      TotalExecutionsToday = totalExecutionsToday,
+      Status = manifest.IsActive ? "operational" : "disabled",
+      LastExecutionTime = lastExecution?.StartTime.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A",
+      NextExecutionTime = DateTime.UtcNow.AddMinutes(15).ToString("yyyy-MM-dd HH:mm:ss") // Simulação de Scheduler
+    });
+}
+
+private static async Task<IResult> GetFlowExecutionHistoryAsync(Guid id, FluxMonitorDbContext db)
+{
+    var history = await db.Executions
+        .Where(e => e.ManifestId == id)
+        .OrderByDescending(e => e.StartTime)
+        .Take(30)
+        .Select(e => new
+        {
+            Key = e.Id.ToString(),
+            Timestamp = e.StartTime.ToString("yyyy-MM-dd HH:mm:ss"),
+            Status = e.Status, 
+            Duration = $"{Math.Round(e.DurationSeconds, 2)}s",
+            DurationRaw = e.DurationSeconds, 
+            ProcessedFiles = e.ProcessedFilesCount ?? 0,
+            ErrorLog = e.ErrorMessage ?? "No errors reported."
+        })
+        .ToListAsync();
+
+    return Results.Ok(history);
+}
 }

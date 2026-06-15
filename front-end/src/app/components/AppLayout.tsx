@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Layout, Menu, Avatar, Switch, theme } from 'antd';
 import {
   DashboardOutlined,
@@ -23,10 +23,32 @@ interface AppLayoutProps {
 
 export default function AppLayout({ children, isDarkMode, onThemeChange }: AppLayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
+  
+  // 🟢 ESTADO DINÂMICO: Começa com o fallback e atualiza com os dados da base de dados
+  const [companyName, setCompanyName] = useState<string>(BRAND_CONFIG.clientCompany || 'Loading...');
+  
   const navigate = useNavigate();
   const location = useLocation();
   const { token } = theme.useToken();
   const userGroup = getLoggedUserGroup();
+
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
+  // 🟢 TIMELINE FETCH: Captura o nome da empresa configurado no backend
+  useEffect(() => {
+    async function fetchBrandConfiguration() {
+      try {
+        const response = await fetch(`${baseUrl}/api/settings/brand`);
+        if (response.ok) {
+          const data = await response.json();
+          setCompanyName(data.clientCompany);
+        }
+      } catch (err) {
+        console.error("Failed to read dynamic company configuration branding:", err);
+      }
+    }
+    fetchBrandConfiguration();
+  }, [baseUrl]);
 
   const menuItems = [
     { key: '/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
@@ -73,7 +95,6 @@ export default function AppLayout({ children, isDarkMode, onThemeChange }: AppLa
           flexDirection: 'column',
         }}
       >
-        {}
         <div
           style={{
             height: 84,
@@ -85,18 +106,17 @@ export default function AppLayout({ children, isDarkMode, onThemeChange }: AppLa
             color: isDarkMode ? token.colorText : token.colorTextHeading,
           }}
         >
-          {}
           <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             {BRAND_CONFIG.icon}
           </span>
           
-          {}
           {!collapsed && (
             <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1.3', overflow: 'hidden' }}>
               <span style={{ fontSize: '18px', fontWeight: 'bold', whiteSpace: 'nowrap', letterSpacing: '-0.3px' }}>
                 {BRAND_CONFIG.logoText}
               </span>
-              {}
+              
+              {/* 🟢 VALOR AGORA INJETADO DO ESTADO DINÂMICO DA BASE DE DADOS */}
               <span style={{ 
                 fontSize: '12px', 
                 fontWeight: 500, 
@@ -105,13 +125,12 @@ export default function AppLayout({ children, isDarkMode, onThemeChange }: AppLa
                 textOverflow: 'ellipsis',
                 overflow: 'hidden'
               }}>
-                {BRAND_CONFIG.clientCompany}
+                {companyName}
               </span>
             </div>
           )}
         </div>
 
-        {}
         <div style={{ flex: 1 }}>
           <Menu
             theme={currentTheme}
@@ -123,14 +142,12 @@ export default function AppLayout({ children, isDarkMode, onThemeChange }: AppLa
           />
         </div>
 
-        {}
         <div style={{ 
           paddingBottom: collapsed ? 16 : 24, 
           borderTop: `1px solid ${token.colorBorderSecondary}`,
           background: token.colorBgContainer 
         }}>
           
-          {}
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -151,7 +168,6 @@ export default function AppLayout({ children, isDarkMode, onThemeChange }: AppLa
             />
           </div>
 
-          {}
           {!collapsed && (
             <div style={{ 
               display: 'flex', 
@@ -169,7 +185,6 @@ export default function AppLayout({ children, isDarkMode, onThemeChange }: AppLa
             </div>
           )}
 
-          {}
           <Menu
             theme={currentTheme}
             mode="inline"
@@ -181,7 +196,6 @@ export default function AppLayout({ children, isDarkMode, onThemeChange }: AppLa
         </div>
       </Sider>
       
-      {}
       <Layout style={{ background: token.colorBgLayout }}>
         <Content style={{ margin: '16px 16px 16px 8px', background: 'transparent', overflow: 'initial' }}>
           {children}

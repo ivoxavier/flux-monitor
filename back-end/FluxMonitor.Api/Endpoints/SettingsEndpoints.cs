@@ -12,8 +12,23 @@ public static class SettingsEndpoints
 
         group.MapGet("/", GetSettingsAsync);
         group.MapPost("/", SaveSettingsAsync);
+        group.MapGet("/brand", GetBrandConfigAsync);
+        
     }
 
+    private static async Task<IResult> GetBrandConfigAsync(FluxMonitorDbContext db)
+    {
+        var settings = await db.SystemSettings
+            .Select(s => new { s.Id, s.ClientCompany })
+            .FirstOrDefaultAsync(s => s.Id == 1);
+
+        return Results.Ok(new
+        {
+            
+            ClientCompany = settings?.ClientCompany ?? "Default Company",
+            SystemName = "FluxMonitor"
+        });
+    }
     private static async Task<IResult> GetSettingsAsync(FluxMonitorDbContext db)
     {
         // Get global OR creates ONE
