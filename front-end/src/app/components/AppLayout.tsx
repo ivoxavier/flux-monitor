@@ -34,7 +34,7 @@ export default function AppLayout({ children, isDarkMode, onThemeChange }: AppLa
 
   const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
-  // 🟢 TIMELINE FETCH: Captura o nome da empresa configurado no backend
+  
   useEffect(() => {
     async function fetchBrandConfiguration() {
       try {
@@ -52,15 +52,20 @@ export default function AppLayout({ children, isDarkMode, onThemeChange }: AppLa
 
   const menuItems = [
     { key: '/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
+    
+    // The monitor userGroup does not have the permission to see manifest
     ...(userGroup !== 'monitor' 
       ? [{ key: '/manifests', icon: <FileTextOutlined />, label: 'Manifestos EDI' }] 
       : []
     ),
+    
     { key: '/monitoring', icon: <AlertOutlined />, label: 'Monitorização' },
-    ...(userGroup !== 'monitor' 
+    
+    //only admin group can access the settings page
+    ...(userGroup === 'admin' 
       ? [{ key: '/settings', icon: <SettingOutlined />, label: 'Configurações' }] 
       : []
-    ),
+    )
   ];
 
   const logoutItem = [

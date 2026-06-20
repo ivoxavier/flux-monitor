@@ -1,6 +1,6 @@
 using System;
 
-namespace FluxMonitor.Domain.Entities;
+namespace FluxMonitor.Application.Entities;
 
 public class Execution
 {

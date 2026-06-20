@@ -1,14 +1,17 @@
 // src/pages/SettingsPage.tsx
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; // 🟢 ADICIONADO PARA O REDIRECIONAMENTO
 import { Card, Tabs, Form, Switch, InputNumber, Button, Space, Typography, message, theme, Modal, Descriptions, Badge, Timeline, Input } from 'antd';
 import { SettingOutlined, UserOutlined, SaveOutlined, InfoCircleOutlined, CloudDownloadOutlined, GithubOutlined, GlobalOutlined, ShopOutlined, AlertOutlined } from '@ant-design/icons';
 import UsersPage from './UsersPage';
 import { BRAND_CONFIG } from '../../config/brand'; 
 import { getTranslation } from '../../config/i18n';
+import { getLoggedUserGroup } from '../../utils/auth';
 
 const { Title, Text, Paragraph } = Typography;
 
 export default function SettingsPage() {
+  const navigate = useNavigate(); // 🟢 ADICIONADO
   const { token } = theme.useToken();
   const [form] = Form.useForm();
   
@@ -19,10 +22,21 @@ export default function SettingsPage() {
 
   const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
-  
   const t = getTranslation().settings;
+  const userGroup = getLoggedUserGroup(); // 🟢 ADICIONADO PARA LER O PERFIL
+
+  // 🟢 BLOQUEIO DE SEGURANÇA: Se não for admin, manda para o Dashboard
+  useEffect(() => {
+    if (userGroup !== 'admin') {
+      message.error("Acesso restrito. Apenas Administradores podem aceder às configurações.");
+      navigate('/dashboard', { replace: true });
+    }
+  }, [userGroup, navigate]);
 
   useEffect(() => {
+    // Só faz o fetch das settings se for admin (evita calls desnecessárias)
+    if (userGroup !== 'admin') return;
+
     const fetchSettings = async () => {
       try {
         const response = await fetch(`${baseUrl}/api/settings`);
@@ -36,7 +50,12 @@ export default function SettingsPage() {
       }
     };
     fetchSettings();
-  }, [form, baseUrl, t.errLoad, t.errServer]);
+  }, [form, baseUrl, t.errLoad, t.errServer, userGroup]);
+
+  // 🟢 SE NÃO FOR ADMIN, NÃO RENDERIZA NADA (Evita "piscar" a UI antes de redirecionar)
+  if (userGroup !== 'admin') {
+    return null;
+  }
 
   const handleSaveSettings = async (values: any) => {
     setPageLoading(true);
@@ -107,7 +126,6 @@ export default function SettingsPage() {
           }}
           style={{ maxWidth: 500, marginTop: 16 }}
         >
-          {}
           <Title level={5} style={{ marginBottom: 16 }}>{t.labels.whiteLabelTitle}</Title>
           <Card size="small" style={{ marginBottom: 24, background: token.colorFillAlter }}>
             <Form.Item
@@ -122,7 +140,6 @@ export default function SettingsPage() {
             </Form.Item>
           </Card>
 
-          {}
           <Title level={5} style={{ marginBottom: 16 }}>
             <Space><AlertOutlined style={{ color: token.colorWarning }} /> {t.labels.errorActionsTitle}</Space>
           </Title>
@@ -136,7 +153,6 @@ export default function SettingsPage() {
               <Switch checkedChildren={t.labels.switchActive} unCheckedChildren={t.labels.switchInactive} danger />
             </Form.Item>
 
-            {}
             <div style={{ 
               opacity: actionsEnabled ? 1 : 0.5, 
               transition: 'opacity 0.3s', 
@@ -163,7 +179,6 @@ export default function SettingsPage() {
             </div>
           </Card>
 
-          {}
           <Title level={5} style={{ marginBottom: 16 }}>{t.labels.housekeepingTitle}</Title>
           
           <Card size="small" style={{ marginBottom: 16, background: token.colorFillAlter }}>

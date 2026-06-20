@@ -2,8 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using FluxMonitor.Application.Interfaces;
-using FluxMonitor.Domain;
-using FluxMonitor.Domain.Entities;
+using FluxMonitor.Application.Entities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 

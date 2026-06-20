@@ -39,11 +39,10 @@ export default function App() {
         <Routes>
           <Route path="/" element={<LoginPage />} />
           
-          {}
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute allowedGroups={['admin', 'edi-developer', 'monitor']}>
+              <ProtectedRoute allowedGroups={['admin', 'operador', 'consulta']}>
                 <AppLayout isDarkMode={isDarkMode} onThemeChange={setIsDarkMode}>
                   <DashboardPage />
                 </AppLayout>
@@ -51,11 +50,10 @@ export default function App() {
             }
           />
           
-          {}
           <Route
             path="/manifests"
             element={
-              <ProtectedRoute allowedGroups={['admin', 'edi-developer']}>
+              <ProtectedRoute allowedGroups={['admin', 'operador']}>
                 <AppLayout isDarkMode={isDarkMode} onThemeChange={setIsDarkMode}>
                   <ManifestsPage />
                 </AppLayout>
@@ -63,11 +61,10 @@ export default function App() {
             }
           />
           
-          {}
           <Route
             path="/monitoring"
             element={
-              <ProtectedRoute allowedGroups={['admin', 'edi-developer', 'monitor']}>
+              <ProtectedRoute allowedGroups={['admin', 'operador', 'consulta']}>
                 <AppLayout isDarkMode={isDarkMode} onThemeChange={setIsDarkMode}>
                   <MonitoringPage />
                 </AppLayout>
@@ -75,11 +72,10 @@ export default function App() {
             }
           />
           
-          {}
           <Route
             path="/settings"
             element={
-              <ProtectedRoute allowedGroups={['admin', 'edi-developer']}>
+              <ProtectedRoute allowedGroups={['admin']}>
                 <AppLayout isDarkMode={isDarkMode} onThemeChange={setIsDarkMode}>
                   <SettingsPage />
                 </AppLayout>
@@ -87,11 +83,10 @@ export default function App() {
             }
           />
           
-          {}
           <Route
             path="/flow/:id"
             element={
-              <ProtectedRoute allowedGroups={['admin', 'edi-developer', 'monitor']}>
+              <ProtectedRoute allowedGroups={['admin', 'operador', 'consulta']}>
                 <AppLayout isDarkMode={isDarkMode} onThemeChange={setIsDarkMode}>
                   <FlowDetailPage />
                 </AppLayout>

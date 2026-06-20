@@ -1,7 +1,6 @@
 <Solution>
   <Project Path="FluxMonitor.Api/FluxMonitor.Api.csproj" />
   <Project Path="FluxMonitor.Application/FluxMonitor.Application.csproj" />
-  <Project Path="FluxMonitor.Domain/FluxMonitor.Domain.csproj" />
   <Project Path="FluxMonitor.Infrastructure/FluxMonitor.Infrastructure.csproj" />
   <Project Path="FluxMonitor.Worker/FluxMonitor.Worker.csproj" />
 </Solution>

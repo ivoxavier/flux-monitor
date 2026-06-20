@@ -10,7 +10,10 @@ namespace FluxMonitor.Application.DTOs
     string Email,
     string Username,
     string Password,
-    string Role,    
+    string Role, 
+    string Holding,
+    string Section,
+    string Center,   
     bool IsActive   
 );
 
@@ -19,6 +22,9 @@ public record UpdateUserDto(
     string Email,
     string Username,
     string Role,
+    string Holding,
+    string Section,
+    string Center,
     bool IsActive
 );
 }

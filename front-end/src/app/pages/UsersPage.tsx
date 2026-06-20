@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, Table, Tag, Button, Space, Select, Switch, Popconfirm, message, Avatar, Form, Input, Modal, theme } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, KeyOutlined, UserOutlined, MailOutlined, LockOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, KeyOutlined, UserOutlined, MailOutlined, LockOutlined, BankOutlined, ApartmentOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import { getTranslation } from '../../config/i18n';
 
 export default function UsersPage() {
@@ -10,7 +10,6 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
 
-  
   const [filterPerfil, setFilterPerfil] = useState('all');
   const [filterEstado, setFilterEstado] = useState('all');
 
@@ -25,7 +24,6 @@ export default function UsersPage() {
     border: 'none',
   };
 
-  
   const carregarUtilizadores = useCallback(async () => {
     setLoading(true);
     try {
@@ -56,13 +54,15 @@ export default function UsersPage() {
     return <Tag color={item.color}>{item.text}</Tag>;
   };
 
-  
   const handleEdit = (record: any) => {
     form.setFieldsValue({
       nome: record.name,
       email: record.email,
       username: record.username,
       perfil: record.role,
+      holding: record.holding,
+      section: record.section,
+      center: record.center,
       estado: record.status === 'enabled',
     });
     setSelectedUser(record);
@@ -109,6 +109,9 @@ export default function UsersPage() {
           username: values.username,
           password: values.password,
           role: values.perfil,
+          holding: values.holding, // 🟢 NOVO
+          section: values.section, // 🟢 NOVO
+          center: values.center,   // 🟢 NOVO
           isActive: !!values.estado,
         };
 
@@ -134,7 +137,6 @@ export default function UsersPage() {
     });
   };
 
-
   const columns = [
     {
       title: '',
@@ -150,6 +152,9 @@ export default function UsersPage() {
     { title: t.table.name, dataIndex: 'name', key: 'name' },
     { title: t.table.email, dataIndex: 'email', key: 'email' },
     { title: t.table.username, dataIndex: 'username', key: 'username' },
+    { title: 'Holding', dataIndex: 'holding', key: 'holding' }, // 🟢 NOVO
+    { title: 'Section', dataIndex: 'section', key: 'section' }, // 🟢 NOVO
+    { title: 'Center', dataIndex: 'center', key: 'center' },    // 🟢 NOVO
     { title: t.table.role, dataIndex: 'role', key: 'role', render: (role: string) => getPerfilTag(role) },
     {
       title: t.table.status,
@@ -161,7 +166,6 @@ export default function UsersPage() {
         </Tag>
       ),
     },
-    { title: t.table.lastLogin, dataIndex: 'lastLogin', key: 'lastLogin' },
     {
       title: t.table.actions,
       key: 'acoes',
@@ -194,7 +198,6 @@ export default function UsersPage() {
         style={cardElevationStyle}
         extra={
           <Space>
-            {}
             <Select value={filterPerfil} onChange={setFilterPerfil} style={{ width: 160 }}>
               <Select.Option value="all">{t.filters.allRoles}</Select.Option>
               <Select.Option value="admin">{t.roles.admin}</Select.Option>
@@ -220,7 +223,8 @@ export default function UsersPage() {
           </Space>
         }
       >
-        <Table columns={columns} dataSource={utilizadores} loading={loading} pagination={{ pageSize: 10 }} />
+        {/* Adicionado scroll x horizontal para garantir que a tabela não quebra com mais colunas */}
+        <Table columns={columns} dataSource={utilizadores} loading={loading} pagination={{ pageSize: 10 }} scroll={{ x: 1200 }} />
       </Card>
 
       <Modal
@@ -232,30 +236,59 @@ export default function UsersPage() {
           form.resetFields();
           setSelectedUser(null);
         }}
-        width={600}
+        width={650}
         okText={t.yes}
         cancelText={t.no}
       >
-        {/* 🟢 Adicionado initialValues para garantir estabilidade no Switch de estado */}
         <Form form={form} layout="vertical" initialValues={{ estado: true, perfil: 'operador' }}>
-          <Form.Item name="nome" label={t.modal.labelFullName} rules={[{ required: true, message: t.modal.reqFullName }]}>
-            <Input prefix={<UserOutlined />} placeholder="Ex: João Silva" />
-          </Form.Item>
-          <Form.Item
-            name="email"
-            label={t.modal.labelEmail}
-            rules={[
-              { required: true, message: t.modal.reqEmail },
-              { type: 'email', message: t.modal.valEmail },
-            ]}
-          >
-            <Input prefix={<MailOutlined />} placeholder="email@empresa.pt" />
-          </Form.Item>
-          <Form.Item name="username" label={t.modal.labelUsername} rules={[{ required: true, message: t.modal.reqUsername }]}>
-            <Input prefix={<UserOutlined />} placeholder="username" />
-          </Form.Item>
+          {/* Organizado em Grid para o Modal não ficar excessivamente comprido verticalmente */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
+            <Form.Item name="nome" label={t.modal.labelFullName} rules={[{ required: true, message: t.modal.reqFullName }]}>
+              <Input prefix={<UserOutlined />} placeholder="Ex: João Silva" />
+            </Form.Item>
+            <Form.Item
+              name="email"
+              label={t.modal.labelEmail}
+              rules={[
+                { required: true, message: t.modal.reqEmail },
+                { type: 'email', message: t.modal.valEmail },
+              ]}
+            >
+              <Input prefix={<MailOutlined />} placeholder="email@empresa.pt" />
+            </Form.Item>
+
+            <Form.Item name="username" label={t.modal.labelUsername} rules={[{ required: true, message: t.modal.reqUsername }]}>
+              <Input prefix={<UserOutlined />} placeholder="username" />
+            </Form.Item>
+
+            <Form.Item name="perfil" label={t.modal.labelRole} rules={[{ required: true, message: t.modal.reqRole }]}>
+              <Select placeholder={t.modal.placeholderRole}>
+                <Select.Option value="admin">{t.roles.admin}</Select.Option>
+                <Select.Option value="operador">{t.roles.operador}</Select.Option>
+                <Select.Option value="consulta">{t.roles.consulta}</Select.Option>
+              </Select>
+            </Form.Item>
+
+            {/* 🟢 NOVOS CAMPOS NA GRELHA */}
+            <Form.Item name="holding" label="Holding">
+              <Input prefix={<BankOutlined />} placeholder="Ex: Global Corp" />
+            </Form.Item>
+
+            <Form.Item name="section" label="Section / Departamento">
+              <Input prefix={<ApartmentOutlined />} placeholder="Ex: Financeiro" />
+            </Form.Item>
+
+            <Form.Item name="center" label="Center / Filial">
+              <Input prefix={<EnvironmentOutlined />} placeholder="Ex: Lisboa" />
+            </Form.Item>
+
+            <Form.Item name="estado" label={t.modal.labelStatus} valuePropName="checked">
+              <Switch checkedChildren={t.switchActive} unCheckedChildren={t.switchInactive} />
+            </Form.Item>
+          </div>
+
           {!selectedUser && (
-            <>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px', marginTop: 8, paddingTop: 16, borderTop: `1px solid ${token.colorBorderSecondary}` }}>
               <Form.Item
                 name="password"
                 label={t.modal.labelPassword}
@@ -282,22 +315,8 @@ export default function UsersPage() {
               >
                 <Input.Password prefix={<LockOutlined />} placeholder="Confirmar Password" />
               </Form.Item>
-            </>
+            </div>
           )}
-          <Form.Item 
-  name="perfil" 
-  label={t.modal.labelRole} 
-  rules={[{ required: true, message: t.modal.reqRole }]}
->
-  <Select placeholder={t.modal.placeholderRole}>
-    <Select.Option value="admin">{t.roles.admin}</Select.Option>
-    <Select.Option value="operador">{t.roles.operador}</Select.Option>
-    <Select.Option value="consulta">{t.roles.consulta}</Select.Option>
-  </Select>
-</Form.Item>
-          <Form.Item name="estado" label={t.modal.labelStatus} valuePropName="checked">
-            <Switch checkedChildren={t.switchActive} unCheckedChildren={t.switchInactive} />
-          </Form.Item>
         </Form>
       </Modal>
     </div>

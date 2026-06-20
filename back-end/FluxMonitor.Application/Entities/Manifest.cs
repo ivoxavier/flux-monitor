@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace FluxMonitor.Domain.Entities;
+namespace FluxMonitor.Application.Entities;
 
 public class Manifest
 {

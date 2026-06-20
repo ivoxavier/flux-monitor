@@ -1,5 +1,6 @@
 // src/utils/auth.ts
-export type UserGroup = 'admin' | 'edi-developer' | 'monitor';
+
+export type UserGroup = 'admin' | 'operador' | 'consulta';
 
 export const getLoggedUserGroup = (): UserGroup | null => {
   return localStorage.getItem('userGroup') as UserGroup | null;
@@ -13,5 +14,5 @@ export const logout = () => {
   localStorage.removeItem('authToken');
   localStorage.removeItem('username');
   localStorage.removeItem('userGroup');
-  window.location.href = '/login';
+  window.location.href = '/'; // ou '/login'
 };
