@@ -1,6 +1,11 @@
+using System.Data;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using Dapper;
 using FluxMonitor.Infrastructure.Data;
-using FluxMonitor.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
+using FluxMonitor.Application.Entities;
 
 namespace FluxMonitor.Api.Endpoints;
 
@@ -10,60 +15,63 @@ public static class SettingsEndpoints
     {
         var group = app.MapGroup("/api/settings");
 
-        group.MapGet("/", GetSettingsAsync);
-        group.MapPost("/", SaveSettingsAsync);
-        group.MapGet("/brand", GetBrandConfigAsync);
+        group.MapGet("/", GetSettings);
+        group.MapPost("/", SaveSettings);
+        group.MapGet("/brand", GetBrandConfig);
+    }
+
+    private static async Task<IResult> GetSettings(IDbConnectionFactory dbFactory)
+    {
+        using var connection = dbFactory.CreateConnection();
         
-    }
+        var settings = await connection.QueryFirstOrDefaultAsync<SystemSettings>(
+            "sp_get_settings", 
+            commandType: CommandType.StoredProcedure);
 
-    private static async Task<IResult> GetBrandConfigAsync(FluxMonitorDbContext db)
-    {
-        var settings = await db.SystemSettings
-            .Select(s => new { s.Id, s.ClientCompany })
-            .FirstOrDefaultAsync(s => s.Id == 1);
-
-        return Results.Ok(new
-        {
-            
-            ClientCompany = settings?.ClientCompany ?? "Default Company",
-            SystemName = "FluxMonitor"
-        });
-    }
-    private static async Task<IResult> GetSettingsAsync(FluxMonitorDbContext db)
-    {
-        // Get global OR creates ONE
-        var settings = await db.SystemSettings.FirstOrDefaultAsync(s => s.Id == 1);
         if (settings == null)
         {
-            return Results.NotFound("System Configs not Initialized");
+            return Results.NotFound("System Configs not Initialized.");
         }
+        
         return Results.Ok(settings);
     }
 
-    private static async Task<IResult> SaveSettingsAsync(SystemSettings updatedSettings, FluxMonitorDbContext db)
+    private static async Task<IResult> SaveSettings(SystemSettings updatedSettings, IDbConnectionFactory dbFactory)
     {
-        var currentSettings = await db.SystemSettings.FirstOrDefaultAsync(s => s.Id == 1);
-        
-        if (currentSettings == null)
-        {
-            // Fallback
-            updatedSettings.Id = 1;
-            await db.SystemSettings.AddAsync(updatedSettings);
-        }
-        else
-        {
-            
-            currentSettings.ClientCompany = updatedSettings.ClientCompany;
-            currentSettings.EnableGlobalErrorActions = updatedSettings.EnableGlobalErrorActions;
-            currentSettings.SendEmailOnFailure = updatedSettings.SendEmailOnFailure;
-            currentSettings.TriggerWebhookOnFailure = updatedSettings.TriggerWebhookOnFailure;
-            currentSettings.CleanLogs = updatedSettings.CleanLogs;
-            currentSettings.LogsRetentionDays = updatedSettings.LogsRetentionDays;
-            currentSettings.CleanManifests = updatedSettings.CleanManifests;
-            currentSettings.ManifestsRetentionDays = updatedSettings.ManifestsRetentionDays;
-        }
+        using var connection = dbFactory.CreateConnection();
 
-        await db.SaveChangesAsync();
-        return Results.Ok(new { message = "Configurações gravadas com sucesso!" });
+        
+        var parameters = new DynamicParameters();
+        parameters.Add("p_ClientCompany", updatedSettings.ClientCompany);
+        parameters.Add("p_EnableGlobalErrorActions", updatedSettings.EnableGlobalErrorActions);
+        parameters.Add("p_SendEmailOnFailure", updatedSettings.SendEmailOnFailure);
+        parameters.Add("p_TriggerWebhookOnFailure", updatedSettings.TriggerWebhookOnFailure);
+        parameters.Add("p_CleanLogs", updatedSettings.CleanLogs);
+        parameters.Add("p_LogsRetentionDays", updatedSettings.LogsRetentionDays);
+        parameters.Add("p_CleanManifests", updatedSettings.CleanManifests);
+        parameters.Add("p_ManifestsRetentionDays", updatedSettings.ManifestsRetentionDays);
+
+        await connection.ExecuteAsync(
+            "sp_save_settings", 
+            parameters, 
+            commandType: CommandType.StoredProcedure);
+
+        return Results.Ok(new { message = "Settings Saved!" });
+    }
+
+    private static async Task<IResult> GetBrandConfig(IDbConnectionFactory dbFactory)
+    {
+        using var connection = dbFactory.CreateConnection();
+
+        
+        var settings = await connection.QueryFirstOrDefaultAsync<SystemSettings>(
+            "sp_get_settings", 
+            commandType: CommandType.StoredProcedure);
+
+        return Results.Ok(new
+        {
+            ClientCompany = settings?.ClientCompany ?? "Default Company",
+            SystemName = "FluxMonitor"
+        });
     }
 }

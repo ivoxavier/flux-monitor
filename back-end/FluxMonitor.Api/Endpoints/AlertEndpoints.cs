@@ -1,13 +1,13 @@
 using System;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.EntityFrameworkCore;
+using Dapper;
 using FluxMonitor.Application.DTOs;
 using FluxMonitor.Infrastructure.Data;
-using FluxMonitor.Domain.Entities;
 
 namespace FluxMonitor.Api.Endpoints;
 
@@ -16,67 +16,49 @@ public static class AlertEndpoints
     public static void MapAlertEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/alerts");
-
-        group.MapGet("/", GetAlertsAsync);
-        group.MapPut("/{id:guid}/resolve", ResolveAlertAsync);
-        group.MapPut("/{id:guid}/reopen", ReopenAlertAsync);
+        group.MapGet("/", GetAlerts);
+        group.MapPut("/{id:guid}/resolve", ResolveAlert);
+        group.MapPut("/{id:guid}/reopen", ReopenAlert);
     }
 
-    private static async Task<IResult> GetAlertsAsync(
-        string? status, 
-        string? severity, 
-        FluxMonitorDbContext db)
+    private static async Task<IResult> GetAlerts(string? status, string? severity, IDbConnectionFactory dbFactory)
     {
-        var query = db.Alerts.AsQueryable();
+        using var connection = dbFactory.CreateConnection();
+        
+        var rawAlerts = await connection.QueryAsync<dynamic>(
+            "sp_get_alerts", 
+            new { p_Status = status?.ToLower(), p_Severity = severity?.ToLower() },
+            commandType: System.Data.CommandType.StoredProcedure);
 
-        if (!string.IsNullOrEmpty(status) && !status.Equals("all", StringComparison.OrdinalIgnoreCase))
+        var alerts = rawAlerts.Select(a => new AlertResponseDto
         {
-            query = query.Where(a => a.Status == status.ToLower());
-        }
-
-     
-        if (!string.IsNullOrEmpty(severity) && !severity.Equals("all", StringComparison.OrdinalIgnoreCase))
-        {
-            query = query.Where(a => a.Severity == severity.ToLower());
-        }
-
-        var alerts = await query
-            .OrderByDescending(a => a.Id)
-            .Select(a => new AlertResponseDto
-            {
-                Key = a.Id.ToString(),
-                FlowName = a.FlowName,
-                AlertType = a.AlertType,
-                Timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"), 
-                Severity = a.Severity.ToLower(),
-                Status = a.Status.ToLower(),
-                Description = a.Description,
-                TriggeredAutomatedActions = a.TriggeredAutomatedActions.ToList()
-            })
-            .ToListAsync();
+            Key = a.Id.ToString(),
+            FlowName = a.FlowName,
+            AlertType = a.AlertType,
+            Timestamp = ((DateTime)a.CreatedAt).ToString("yyyy-MM-dd HH:mm:ss"),
+            Severity = a.Severity,
+            Status = a.Status,
+            Description = a.Description,
+            // Parse do MySQL JSON string back to List<string>
+            TriggeredAutomatedActions = string.IsNullOrEmpty(a.TriggeredAutomatedActions) 
+                ? new System.Collections.Generic.List<string>()
+                : JsonSerializer.Deserialize<System.Collections.Generic.List<string>>(a.TriggeredAutomatedActions)
+        }).ToList();
 
         return Results.Ok(alerts);
     }
 
-    private static async Task<IResult> ResolveAlertAsync(Guid id, FluxMonitorDbContext db)
+    private static async Task<IResult> ResolveAlert(Guid id, IDbConnectionFactory dbFactory)
     {
-        var alert = await db.Alerts.FindAsync(id);
-        if (alert == null) return Results.NotFound("Target infrastructure operational alert record not found.");
-
-        alert.Status = "resolved";
-        await db.SaveChangesAsync();
-
-        return Results.Ok(new { success = true, message = "Alert status marked as resolved successfully." });
+        using var connection = dbFactory.CreateConnection();
+        await connection.ExecuteAsync("sp_update_alert_status", new { p_Id = id.ToString(), p_Status = "resolved" }, commandType: System.Data.CommandType.StoredProcedure);
+        return Results.Ok(new { success = true, message = "Alert resolved successfully." });
     }
 
-    private static async Task<IResult> ReopenAlertAsync(Guid id, FluxMonitorDbContext db)
+    private static async Task<IResult> ReopenAlert(Guid id, IDbConnectionFactory dbFactory)
     {
-        var alert = await db.Alerts.FindAsync(id);
-        if (alert == null) return Results.NotFound("Target infrastructure operational alert record not found.");
-
-        alert.Status = "active";
-        await db.SaveChangesAsync();
-
-        return Results.Ok(new { success = true, message = "Alert context re-opened for engineering analysis." });
+        using var connection = dbFactory.CreateConnection();
+        await connection.ExecuteAsync("sp_update_alert_status", new { p_Id = id.ToString(), p_Status = "active" }, commandType: System.Data.CommandType.StoredProcedure);
+        return Results.Ok(new { success = true, message = "Alert re-opened successfully." });
     }
 }

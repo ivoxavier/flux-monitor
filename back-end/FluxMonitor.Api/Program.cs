@@ -47,11 +47,8 @@ if (string.IsNullOrEmpty(connectionString))
     Console.WriteLine("MySQL connectionString is empty!");
 }
 
-builder.Services.AddDbContext<FluxMonitorDbContext>(options =>
-    options.UseMySQL(
-        connectionString ?? string.Empty,
-        b => b.MigrationsAssembly("FluxMonitor.Infrastructure")
-    ));
+
+builder.Services.AddSingleton<IDbConnectionFactory, MySqlDbConnectionFactory>();
 
 
 builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
@@ -65,9 +62,10 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins(allowedOrigins)
+        policy.WithOrigins("http://localhost:3000","http://localhost:5173")
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
 
@@ -86,37 +84,6 @@ app.UseSwaggerUI(options =>
     options.RoutePrefix = string.Empty; // make swagger open on (http://localhost:5001)
 });
 
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    var context = services.GetRequiredService<FluxMonitorDbContext>();
-    var logger = services.GetRequiredService<ILogger<Program>>();
-
-
-    int maxRetries = 5;
-    int delayInSeconds = 5;
-
-    for (int i = 1; i <= maxRetries; i++)
-    {
-        try
-        {
-            logger.LogInformation("Try making Migrations (Try {Run}/{Max})...", i, maxRetries);
-            context.Database.Migrate();
-            logger.LogInformation("DataBase Migrated and ready!");
-            break;
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning("O MySQL is not ready. Waiting {Delay} seconds...", delayInSeconds);
-            if (i == maxRetries)
-            {
-                logger.LogError(ex, "Error : Was not possible to apply migrations.");
-                throw;
-            }
-            Thread.Sleep(delayInSeconds * 1000);
-        }
-    }
-}
 
 app.UseCors();
 
